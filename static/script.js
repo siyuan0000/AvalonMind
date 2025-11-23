@@ -64,6 +64,91 @@ function startStatusPolling() {
 
     statusInterval = setInterval(updateGameStatus, 500);
     updateGameStatus(); // Initial update
+    connectToStream();
+}
+
+// Connect to SSE stream
+let eventSource = null;
+
+function connectToStream() {
+    if (eventSource) {
+        eventSource.close();
+    }
+
+    eventSource = new EventSource('/api/stream');
+
+    eventSource.onmessage = function (event) {
+        // Generic log message
+        try {
+            const data = JSON.parse(event.data);
+            appendLog(data.message);
+        } catch (e) {
+            console.error('Error parsing log:', e);
+        }
+    };
+
+    eventSource.addEventListener('log', function (event) {
+        const data = JSON.parse(event.data);
+        appendLog(data.message);
+    });
+
+    eventSource.addEventListener('reasoning', function (event) {
+        const data = JSON.parse(event.data);
+        appendReasoning(data.player, data.content);
+    });
+
+    eventSource.addEventListener('discussion', function (event) {
+        const data = JSON.parse(event.data);
+        appendLog(`<strong>${data.player}</strong>: ${data.content}`, 'discussion');
+    });
+
+    eventSource.addEventListener('vote', function (event) {
+        const data = JSON.parse(event.data);
+        appendLog(`${data.player} voted <strong>${data.vote}</strong>`, data.vote.toLowerCase());
+    });
+
+    eventSource.addEventListener('phase', function (event) {
+        const data = JSON.parse(event.data);
+        appendLog(`--- ${data.name} ---`, 'phase');
+    });
+
+    eventSource.onerror = function (err) {
+        console.error("EventSource failed:", err);
+        eventSource.close();
+        // Retry after a delay if game is still running
+        setTimeout(() => {
+            if (statusInterval) connectToStream();
+        }, 5000);
+    };
+}
+
+function appendLog(message, type = 'info') {
+    const logContainer = document.getElementById('gameLog');
+    const entry = document.createElement('div');
+    entry.className = `log-entry ${type}`;
+    entry.innerHTML = `<span class="timestamp">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+    logContainer.appendChild(entry);
+    logContainer.scrollTop = logContainer.scrollHeight;
+
+    // Remove placeholder if present
+    const placeholder = logContainer.querySelector('.log-placeholder');
+    if (placeholder) placeholder.remove();
+}
+
+function appendReasoning(player, content) {
+    const container = document.getElementById('aiReasoning');
+    const entry = document.createElement('div');
+    entry.className = 'reasoning-entry';
+    entry.innerHTML = `
+        <div class="reasoning-header">${player} is thinking...</div>
+        <div class="reasoning-content">${content}</div>
+    `;
+    container.appendChild(entry);
+    container.scrollTop = container.scrollHeight;
+
+    // Remove placeholder if present
+    const placeholder = container.querySelector('.log-placeholder');
+    if (placeholder) placeholder.remove();
 }
 
 // Update game status display
@@ -100,6 +185,10 @@ async function updateGameStatus() {
                 clearInterval(statusInterval);
                 statusInterval = null;
             }
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
         } else if (status.status === 'starting' || status.status === 'initializing') {
             statusMessage.textContent = 'Game is starting...';
             document.getElementById('interactionCard').style.display = 'none';
@@ -122,6 +211,10 @@ async function updateGameStatus() {
                 clearInterval(statusInterval);
                 statusInterval = null;
             }
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
+            }
             loadRecentGames(); // Refresh game list
         } else if (status.status === 'error') {
             statusMessage.textContent = 'Error: ' + (status.error || 'Unknown error');
@@ -131,6 +224,10 @@ async function updateGameStatus() {
             if (statusInterval) {
                 clearInterval(statusInterval);
                 statusInterval = null;
+            }
+            if (eventSource) {
+                eventSource.close();
+                eventSource = null;
             }
         }
 

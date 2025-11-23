@@ -59,7 +59,7 @@ class AvalonGame:
 
     def get_role_visibility(self, player):
         """Get what information a player can see based on their role."""
-        info = []
+        info = [f"You are {player.name}."]
 
         if player.role == 'Merlin':
             # Merlin sees all Evil players
@@ -321,10 +321,21 @@ class GameController:
         """Set callback for game status updates."""
         self.log_handler = handler
 
+    def set_event_handler(self, handler):
+        """Set callback for structured game events."""
+        self.event_handler = handler
+
+    def log_event(self, event_type, data):
+        """Emit a structured event."""
+        if hasattr(self, 'event_handler') and self.event_handler:
+            self.event_handler(event_type, data)
+
     def log_action(self, message):
         """Send status update to handler."""
         if self.log_handler:
             self.log_handler(message)
+        # Also emit as a generic log event
+        self.log_event('log', {'message': message})
 
     def _get_human_input(self, player, action_type, **kwargs):
         """Request input from human player."""
@@ -368,6 +379,7 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
+            self.log_event('reasoning', {'player': player.name, 'content': response})
 
         if not response:
             return "I'll go with the majority decision."
@@ -414,6 +426,7 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
+            self.log_event('reasoning', {'player': leader.name, 'content': response})
 
         if not response:
             # Fallback: keep initial team
@@ -462,6 +475,7 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
+            self.log_event('reasoning', {'player': leader.name, 'content': response})
 
         if not response:
             # Fallback: random selection
@@ -507,6 +521,7 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
+            self.log_event('reasoning', {'player': player.name, 'content': response})
         
         vote = ai.extract_choice(response, ['APPROVE', 'REJECT'])
 
@@ -540,6 +555,7 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
+            self.log_event('reasoning', {'player': player.name, 'content': response})
 
         action = ai.extract_choice(response, ['SUCCESS', 'FAIL'])
 
@@ -580,6 +596,7 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
+            self.log_event('reasoning', {'player': assassin.name, 'content': response})
 
         # Extract target name
         target_name = None
@@ -602,6 +619,7 @@ class GameController:
         print(f"ROUND {round_num + 1} - Mission requires {team_size} players")
         print(f"{'='*60}")
         self.log_action(f"Starting Round {round_num + 1} (Team size: {team_size})")
+        self.log_event('phase', {'name': 'Round Start', 'round': round_num + 1, 'team_size': team_size})
 
         # Initialize round log
         round_log = self.logger.start_round(round_num + 1, team_size)
@@ -648,6 +666,7 @@ class GameController:
                 leader_opening = self.ai_discuss_proposal(leader, leader, initial_team, discussion_history)
                 discussion_history.append((leader.name, leader_opening))
                 self.logger.add_discussion_comment(proposal_log, leader.name, leader_opening, tag="Leader Opening")
+                self.log_event('discussion', {'player': leader.name, 'content': leader_opening, 'tag': 'Leader Opening'})
                 print(f"\n{leader.name} (Leader opening): {leader_opening}")
 
                 leader_position = self.game.players.index(leader)
@@ -661,12 +680,14 @@ class GameController:
                     comment = self.ai_discuss_proposal(player, leader, initial_team, discussion_history)
                     discussion_history.append((player.name, comment))
                     self.logger.add_discussion_comment(proposal_log, player.name, comment)
+                    self.log_event('discussion', {'player': player.name, 'content': comment})
                     print(f"\n{player.name}: {comment}")
 
                 # Leader gives a final summary after hearing everyone
                 leader_summary = self.ai_discuss_proposal(leader, leader, initial_team, discussion_history)
                 discussion_history.append((leader.name, leader_summary))
                 self.logger.add_discussion_comment(proposal_log, leader.name, leader_summary, tag="Leader Summary")
+                self.log_event('discussion', {'player': leader.name, 'content': leader_summary, 'tag': 'Leader Summary'})
                 print(f"\n{leader.name} (Leader summary): {leader_summary}")
 
                 # Leader's final summary and decision
@@ -711,6 +732,7 @@ class GameController:
                     votes.append(vote)
                     votes_dict[player.name] = vote
                     print(f"  {player.name}: {'APPROVE' if vote else 'REJECT'}")
+                    self.log_event('vote', {'player': player.name, 'vote': 'APPROVE' if vote else 'REJECT'})
 
                 # Log votes
                 self.logger.log_votes(proposal_log, votes_dict)

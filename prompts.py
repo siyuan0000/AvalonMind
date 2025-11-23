@@ -144,6 +144,7 @@ DISCUSSION STRATEGY FRAMEWORK:
 
 IMPORTANT RULES:
 - Do NOT explicitly state your role or other players' roles
+- Speak in the first person ("I think...", "I vote..."). Do NOT refer to yourself by name (e.g., don't say "Charlie thinks...").
 - Reference past observations and discussions to support your point
 - Be persuasive but subtle - state your reasoning concisely (1-2 sentences)
 - Use concrete evidence from game history
@@ -224,6 +225,9 @@ DECISION CHECKLIST:
 □ Am I being manipulated by Evil players (if Good)?
 □ Am I maintaining my cover (if Evil)?
 □ Is the final team composition defensible?
+
+IMPORTANT RULES:
+- Speak in the first person ("I decided...", "I am keeping..."). Do NOT refer to yourself by name.
 
 You must select exactly {team_size} players for this mission.
 

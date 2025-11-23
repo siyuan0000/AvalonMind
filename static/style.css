@@ -173,9 +173,12 @@ nav a.active {
 }
 
 @keyframes pulse {
-    0%, 100% {
+
+    0%,
+    100% {
         opacity: 1;
     }
+
     50% {
         opacity: 0.7;
     }
@@ -484,7 +487,7 @@ nav a.active {
     letter-spacing: 0.05em;
 }
 
-.discussion-item > div:last-child {
+.discussion-item>div:last-child {
     color: var(--text-primary);
     font-size: 0.95rem;
 }
@@ -552,4 +555,98 @@ footer a:hover {
     .action-buttons {
         flex-direction: column;
     }
+}
+
+/* Game Panels */
+.game-panels {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-xl);
+}
+
+@media (max-width: 768px) {
+    .game-panels {
+        grid-template-columns: 1fr;
+    }
+}
+
+.log-container,
+.reasoning-container {
+    height: 400px;
+    overflow-y: auto;
+    background-color: #f1f5f9;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md);
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9rem;
+}
+
+.log-entry {
+    margin-bottom: var(--spacing-xs);
+    padding-bottom: var(--spacing-xs);
+    border-bottom: 1px solid #e2e8f0;
+}
+
+.log-entry:last-child {
+    border-bottom: none;
+}
+
+.log-entry.info {
+    color: var(--text-primary);
+}
+
+.log-entry.discussion {
+    color: #4f46e5;
+}
+
+.log-entry.approve {
+    color: #059669;
+}
+
+.log-entry.reject {
+    color: #dc2626;
+}
+
+.log-entry.phase {
+    font-weight: bold;
+    color: #d97706;
+    text-align: center;
+    margin: var(--spacing-md) 0;
+    border-bottom: 2px dashed #d97706;
+}
+
+.timestamp {
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    margin-right: var(--spacing-xs);
+}
+
+.reasoning-entry {
+    margin-bottom: var(--spacing-md);
+    background-color: white;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    padding: var(--spacing-sm);
+}
+
+.reasoning-header {
+    font-weight: bold;
+    color: var(--secondary-color);
+    margin-bottom: var(--spacing-xs);
+    font-size: 0.8rem;
+    text-transform: uppercase;
+}
+
+.reasoning-content {
+    white-space: pre-wrap;
+    color: var(--text-primary);
+}
+
+.log-placeholder {
+    color: var(--text-secondary);
+    text-align: center;
+    margin-top: var(--spacing-xl);
+    font-style: italic;
 }

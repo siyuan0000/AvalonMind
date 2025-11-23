@@ -5,6 +5,7 @@ Game logging functionality for Avalon games.
 import json
 from datetime import datetime
 from pathlib import Path
+from supabase_client import supabase
 
 
 class GameLogger:
@@ -137,6 +138,10 @@ class GameLogger:
             json.dump(self.game_log, f, indent=2, ensure_ascii=False)
 
         print(f"\n[LOG] Game saved to: {json_path}")
+        
+        # Sync to Supabase
+        supabase.save_game_log(self.game_log)
+        
         return json_path
 
     def save_text(self):

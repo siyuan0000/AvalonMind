@@ -3,14 +3,35 @@ Avalon AI Game Web UI
 A simple Flask-based web interface for running and viewing Avalon games.
 """
 
-from flask import Flask, render_template, request, jsonify, send_file
+from flask import Flask, render_template, request, jsonify, send_file, Response
 import os
 import json
 import subprocess
 from datetime import datetime
 from avalon_ai_game import AvalonGame, GameController, OllamaAI, DeepSeekAPI, LocalModelAI, HumanPlayer
-from threading import Thread, Event
+from supabase_client import supabase
+from threading import Thread, Event, Lock
 import time
+from queue import Queue
+
+app = Flask(__name__)
+
+# Event streaming setup
+event_listeners = []
+listeners_lock = Lock()
+
+def broadcast_event(event_type, data):
+    """Broadcast an event to all connected listeners."""
+    with listeners_lock:
+        dead_listeners = []
+        for q in event_listeners:
+            try:
+                q.put((event_type, data))
+            except:
+                dead_listeners.append(q)
+        
+        for q in dead_listeners:
+            event_listeners.remove(q)
 
 app = Flask(__name__)
 
@@ -40,6 +61,27 @@ def handle_log_action(message):
     """Callback to handle game log updates."""
     global running_game
     running_game['current_action'] = message
+
+def handle_game_event(event_type, data):
+    """Callback to handle game events."""
+    broadcast_event(event_type, data)
+
+@app.route('/api/stream')
+def stream():
+    def event_stream():
+        q = Queue()
+        with listeners_lock:
+            event_listeners.append(q)
+        try:
+            while True:
+                event_type, data = q.get()
+                yield f"event: {event_type}\ndata: {json.dumps(data)}\n\n"
+        except GeneratorExit:
+            with listeners_lock:
+                if q in event_listeners:
+                    event_listeners.remove(q)
+
+    return Response(event_stream(), mimetype="text/event-stream")
 
 def handle_human_input(player_name, action_type, **kwargs):
     """Callback to handle human input requests from the game thread."""
@@ -102,6 +144,9 @@ def run_game_thread(config):
         
         # Set log handler for status updates
         controller.set_log_handler(handle_log_action)
+        
+        # Set event handler for real-time updates
+        controller.set_event_handler(handle_game_event)
         
         controller.run_game()
 
@@ -205,11 +250,24 @@ def list_logs():
     # Sort by timestamp, most recent first
     logs.sort(key=lambda x: x['timestamp'], reverse=True)
 
+    # Try to fetch from Supabase
+    supabase_logs = supabase.get_game_logs(limit=20)
+    if supabase_logs:
+        # Merge or replace? For now, let's prefer Supabase if available, or just return Supabase logs
+        # To keep it simple and consistent, if Supabase is connected, we return Supabase logs.
+        # If not, we fall back to local logs.
+        return jsonify({'logs': supabase_logs})
+
     return jsonify({'logs': logs})
 
 @app.route('/api/log/<game_id>')
 def get_log(game_id):
     """Get a specific game log"""
+    # Try Supabase first
+    supabase_log = supabase.get_game_log(game_id)
+    if supabase_log:
+        return jsonify(supabase_log)
+
     log_file = os.path.join(os.path.dirname(__file__), 'logs', f'game_{game_id}.json')
 
     if not os.path.exists(log_file):
