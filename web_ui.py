@@ -83,6 +83,33 @@ def stream():
 
     return Response(event_stream(), mimetype="text/event-stream")
 
+@app.route('/api/signup', methods=['POST'])
+def signup():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    user, error = supabase.sign_up(email, password)
+    if error:
+        return jsonify({'error': error}), 400
+    return jsonify({'user': {'id': user.id, 'email': user.email}})
+
+@app.route('/api/login', methods=['POST'])
+def login():
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    user, error = supabase.sign_in(email, password)
+    if error:
+        return jsonify({'error': error}), 400
+    return jsonify({'user': {'id': user.id, 'email': user.email}})
+
+@app.route('/api/user/<user_id>/usage')
+def get_usage(user_id):
+    usage = supabase.get_user_usage(user_id)
+    return jsonify({'total_tokens': usage})
+
 def handle_human_input(player_name, action_type, **kwargs):
     """Callback to handle human input requests from the game thread."""
     global running_game
@@ -105,7 +132,7 @@ def handle_human_input(player_name, action_type, **kwargs):
     
     return response
 
-def run_game_thread(config):
+def run_game_thread(config, user_id=None):
     """Run game in a separate thread"""
     global running_game
 
@@ -154,6 +181,12 @@ def run_game_thread(config):
         running_game['status'] = 'completed'
         running_game['game_id'] = controller.logger.game_log['game_id']
         running_game['log_path'] = os.path.join('logs', f"game_{running_game['game_id']}.json")
+        
+        # Update token usage if user is logged in
+        if user_id:
+            tokens_used = controller.get_total_token_usage()
+            supabase.update_token_usage(user_id, tokens_used)
+            print(f"Updated token usage for user {user_id}: +{tokens_used} tokens")
 
     except Exception as e:
         running_game['status'] = 'error'
@@ -173,10 +206,11 @@ def start_game():
     """Start a new game with the provided configuration"""
     global running_game
 
-    if running_game['is_running']:
-        return jsonify({'error': 'A game is already running'}), 400
-
     config = request.json
+    user_id = config.get('user_id')
+    
+    if running_game['is_running']:
+        return jsonify({'error': 'Game is already running'}), 400
 
     # Reset running game state
     running_game = {

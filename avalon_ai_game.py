@@ -182,6 +182,7 @@ class DeepSeekAPI(BaseAI):
 
         self.model = model
         self.base_url = 'https://api.deepseek.com/v1/chat/completions'
+        self.token_usage = 0
 
     def _load_api_key_from_env_file(self):
         """Load API key from .env.local file."""
@@ -233,6 +234,8 @@ class DeepSeekAPI(BaseAI):
 
                 with urllib.request.urlopen(req, timeout=30) as response:
                     result = json.loads(response.read().decode('utf-8'))
+                    if 'usage' in result:
+                        self.token_usage += result['usage'].get('total_tokens', 0)
                     return result['choices'][0]['message']['content'].strip()
 
             except Exception as e:
@@ -327,8 +330,16 @@ class GameController:
 
     def log_event(self, event_type, data):
         """Emit a structured event."""
-        if hasattr(self, 'event_handler') and self.event_handler:
+        if self.event_handler:
             self.event_handler(event_type, data)
+
+    def get_total_token_usage(self):
+        """Get total token usage from all AI players."""
+        total = 0
+        for player in self.player_ais:
+            if hasattr(player, 'token_usage'):
+                total += player.token_usage
+        return total
 
     def log_action(self, message):
         """Send status update to handler."""

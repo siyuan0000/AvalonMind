@@ -9,50 +9,135 @@ document.addEventListener('DOMContentLoaded', function () {
     startStatusPolling();
 });
 
-// Start a new game
+function setupAuth() {
+    const modal = document.getElementById('authModal');
+    const loginBtn = document.getElementById('loginBtn');
+    const closeBtn = document.querySelector('.close');
+    const logoutBtn = document.getElementById('logoutBtn');
+    const submitLogin = document.getElementById('submitLogin');
+    const submitSignup = document.getElementById('submitSignup');
+
+    loginBtn.onclick = () => modal.style.display = 'flex';
+    closeBtn.onclick = () => modal.style.display = 'none';
+    window.onclick = (event) => {
+        if (event.target == modal) modal.style.display = 'none';
+    };
+
+    logoutBtn.onclick = () => {
+        currentUser = null;
+        localStorage.removeItem('avalon_user');
+        updateAuthUI();
+    };
+
+    submitLogin.onclick = (e) => {
+        e.preventDefault();
+        handleAuth('/api/login');
+    };
+
+    submitSignup.onclick = (e) => {
+        e.preventDefault();
+        handleAuth('/api/signup');
+    };
+}
+
+async function handleAuth(endpoint) {
+    const email = document.getElementById('email').value;
+    const password = document.getElementById('password').value;
+    const messageEl = document.getElementById('authMessage');
+
+    try {
+        const response = await fetch(endpoint, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            currentUser = data.user;
+            localStorage.setItem('avalon_user', JSON.stringify(currentUser));
+            document.getElementById('authModal').style.display = 'none';
+            updateAuthUI();
+            fetchTokenUsage();
+            messageEl.textContent = '';
+        } else {
+            messageEl.textContent = data.error || 'Authentication failed';
+        }
+    } catch (error) {
+        messageEl.textContent = 'Network error';
+    }
+}
+
+function updateAuthUI() {
+    const loginBtn = document.getElementById('loginBtn');
+    const dashboard = document.getElementById('userDashboard');
+    const userEmail = document.getElementById('userEmail');
+
+    if (currentUser) {
+        loginBtn.style.display = 'none';
+        dashboard.style.display = 'flex';
+        userEmail.textContent = currentUser.email;
+    } else {
+        loginBtn.style.display = 'block';
+        dashboard.style.display = 'none';
+    }
+}
+
+async function fetchTokenUsage() {
+    if (!currentUser) return;
+    try {
+        const response = await fetch(`/api/user/${currentUser.id}/usage`);
+        const data = await response.json();
+        document.getElementById('tokenCount').textContent = data.total_tokens;
+    } catch (error) {
+        console.error('Failed to fetch usage:', error);
+    }
+}
+
 async function startGame() {
     const startButton = document.getElementById('startButton');
-    // const mode = document.querySelector('input[name="configMode"]:checked').value;
+    const statusMessage = document.getElementById('statusMessage');
+    const apiKeyInput = document.getElementById('apiKey');
+    const userModeSelect = document.getElementById('userMode');
 
-    // if (mode === 'custom') {
-    //     alert('Custom mode is not yet implemented in the web interface. Please use start.py for custom configurations.');
-    //     return;
-    // }
+    const apiKey = apiKeyInput.value.trim();
+    const userMode = userModeSelect.value;
 
-    // Disable start button
     startButton.disabled = true;
-    startButton.textContent = 'Starting...';
-
-    // Get configuration
-    const userMode = document.querySelector('input[name="userMode"]:checked').value;
-    const apiKey = document.getElementById('apiKey').value.trim();
-
-    const config = {
-        user_mode: userMode,
-        api_key: apiKey
-    };
+    statusMessage.textContent = 'Starting game...';
 
     try {
         const response = await fetch('/api/start_game', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json'
+                'Content-Type': 'application/json',
             },
-            body: JSON.stringify(config)
+            body: JSON.stringify({
+                api_key: apiKey,
+                user_mode: userMode,
+                user_id: currentUser ? currentUser.id : null
+            }),
         });
 
-        if (!response.ok) {
-            const error = await response.json();
-            throw new Error(error.error || 'Failed to start game');
+        const data = await response.json();
+
+        if (response.ok) {
+            statusMessage.textContent = 'Game started!';
+            updateGameStatus();
+            // Start polling
+            if (!statusInterval) {
+                statusInterval = setInterval(updateGameStatus, 1000);
+            }
+            connectToStream();
+        } else {
+            statusMessage.textContent = 'Error: ' + data.error;
+            startButton.disabled = false;
         }
-
-        // Start polling for status
-        startStatusPolling();
-
     } catch (error) {
-        alert('Error starting game: ' + error.message);
+        statusMessage.textContent = 'Failed to start game';
         startButton.disabled = false;
-        startButton.textContent = 'Start Game';
+        console.error('Start game error:', error);
     }
 }
 

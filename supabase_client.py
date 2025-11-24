@@ -100,5 +100,73 @@ class SupabaseClient:
             print(f"[Supabase] Failed to fetch log {game_id}: {e}")
             return None
 
+    def sign_up(self, email, password):
+        """Sign up a new user."""
+        if not self.client:
+            return None, "Supabase client not initialized"
+        try:
+            res = self.client.auth.sign_up({
+                "email": email,
+                "password": password,
+            })
+            return res.user, None
+        except Exception as e:
+            return None, str(e)
+
+    def sign_in(self, email, password):
+        """Sign in an existing user."""
+        if not self.client:
+            return None, "Supabase client not initialized"
+        try:
+            res = self.client.auth.sign_in_with_password({
+                "email": email,
+                "password": password,
+            })
+            return res.user, None
+        except Exception as e:
+            return None, str(e)
+
+    def update_token_usage(self, user_id, tokens_used, model='deepseek-chat'):
+        """Update token usage for a user."""
+        if not self.client:
+            return False
+        
+        try:
+            # Check if usage record exists
+            res = self.client.table('user_usage').select('*').eq('user_id', user_id).execute()
+            
+            if res.data:
+                # Update existing record
+                current_usage = res.data[0].get('total_tokens', 0)
+                self.client.table('user_usage').update({
+                    'total_tokens': current_usage + tokens_used,
+                    'last_updated': 'now()'
+                }).eq('user_id', user_id).execute()
+            else:
+                # Create new record
+                self.client.table('user_usage').insert({
+                    'user_id': user_id,
+                    'total_tokens': tokens_used,
+                    'model': model
+                }).execute()
+                
+            return True
+        except Exception as e:
+            print(f"[Supabase] Failed to update token usage: {e}")
+            return False
+
+    def get_user_usage(self, user_id):
+        """Get token usage for a user."""
+        if not self.client:
+            return 0
+        try:
+            res = self.client.table('user_usage').select('total_tokens').eq('user_id', user_id).execute()
+            if res.data:
+                return res.data[0]['total_tokens']
+            return 0
+        except Exception as e:
+            print(f"[Supabase] Failed to get user usage: {e}")
+            return 0
+
 # Global instance
 supabase = SupabaseClient()
