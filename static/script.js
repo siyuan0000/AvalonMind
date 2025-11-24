@@ -2,11 +2,21 @@
 
 // Global state
 let statusInterval = null;
+let currentUser = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function () {
-    // loadRecentGames();
+    loadRecentGames();
+    setupAuth();
     startStatusPolling();
+
+    // Check for stored user
+    const storedUser = localStorage.getItem('avalon_user');
+    if (storedUser) {
+        currentUser = JSON.parse(storedUser);
+        updateAuthUI();
+        fetchTokenUsage();
+    }
 });
 
 function setupAuth() {
@@ -31,16 +41,19 @@ function setupAuth() {
 
     submitLogin.onclick = (e) => {
         e.preventDefault();
+        console.log('Login clicked');
         handleAuth('/api/login');
     };
 
     submitSignup.onclick = (e) => {
         e.preventDefault();
+        console.log('Signup clicked');
         handleAuth('/api/signup');
     };
 }
 
 async function handleAuth(endpoint) {
+    console.log('Handling auth for:', endpoint);
     const email = document.getElementById('email').value;
     const password = document.getElementById('password').value;
     const messageEl = document.getElementById('authMessage');
@@ -53,6 +66,7 @@ async function handleAuth(endpoint) {
         });
 
         const data = await response.json();
+        console.log('Auth response:', data);
 
         if (response.ok) {
             currentUser = data.user;
@@ -98,11 +112,8 @@ async function fetchTokenUsage() {
 async function startGame() {
     const startButton = document.getElementById('startButton');
     const statusMessage = document.getElementById('statusMessage');
-    const apiKeyInput = document.getElementById('apiKey');
-    const userModeSelect = document.getElementById('userMode');
-
-    const apiKey = apiKeyInput.value.trim();
-    const userMode = userModeSelect.value;
+    const userModeSelect = document.querySelector('input[name="userMode"]:checked');
+    const userMode = userModeSelect ? userModeSelect.value : 'watch';
 
     startButton.disabled = true;
     statusMessage.textContent = 'Starting game...';
@@ -114,7 +125,6 @@ async function startGame() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                api_key: apiKey,
                 user_mode: userMode,
                 user_id: currentUser ? currentUser.id : null
             }),
@@ -338,101 +348,101 @@ function showInputForm(inputRequest) {
     if (type === 'discussion') {
         promptP.textContent = `Discussion Phase: What do you want to say about the proposed team(${data.proposed_team.join(', ')}) ? `;
         html = `
-    < div class="form-group" >
+            <div class="form-group">
                 <textarea id="discussionInput" rows="3" placeholder="Enter your comment..."></textarea>
                 <button class="btn-primary" onclick="submitAction(document.getElementById('discussionInput').value)">Submit Comment</button>
-            </div >
-    <div class="info-box">
-        <p><strong>Role Info:</strong> ${data.role_info}</p>
-        <p><strong>Game State:</strong> ${data.game_state}</p>
-    </div>
-`;
+            </div>
+            <div class="info-box">
+                <p><strong>Role Info:</strong> ${data.role_info}</p>
+                <p><strong>Game State:</strong> ${data.game_state}</p>
+            </div>
+        `;
     } else if (type === 'team_proposal') {
         promptP.textContent = `You are the Leader! Select ${data.team_size} players for the mission.`;
 
         const playersHtml = data.player_names.map(name => `
-    < label class= "checkbox-label" >
-    <input type="checkbox" name="teamSelect" value="${name}">
-        ${name}
-    </label>
+            <label class="checkbox-label">
+                <input type="checkbox" name="teamSelect" value="${name}">
+                ${name}
+            </label>
         `).join('');
 
         html = `
-        < div class="form-group" >
+            <div class="form-group">
                 <div class="checkbox-group">
                     ${playersHtml}
                 </div>
                 <button class="btn-primary" onclick="submitTeamProposal(${data.team_size})">Propose Team</button>
-            </div >
-    <div class="info-box">
-        <p><strong>Role Info:</strong> ${data.role_info}</p>
-    </div>
-`;
+            </div>
+            <div class="info-box">
+                <p><strong>Role Info:</strong> ${data.role_info}</p>
+            </div>
+        `;
     } else if (type === 'leader_final_proposal') {
         promptP.textContent = `Final Decision: Confirm or change your team proposal.`;
 
         const playersHtml = data.player_names.map(name => `
-    < label class="checkbox-label" >
-        <input type="checkbox" name="teamSelect" value="${name}" ${data.initial_team.includes(name) ? 'checked' : ''}>
-            ${name}
-        </label>
-`).join('');
+            <label class="checkbox-label">
+                <input type="checkbox" name="teamSelect" value="${name}" ${data.initial_team.includes(name) ? 'checked' : ''}>
+                ${name}
+            </label>
+        `).join('');
 
         html = `
-    < div class="form-group" >
+            <div class="form-group">
                 <div class="checkbox-group">
                     ${playersHtml}
                 </div>
                 <button class="btn-primary" onclick="submitTeamProposal(${data.team_size})">Confirm Team</button>
-            </div >
-    <div class="info-box">
-        <p><strong>Role Info:</strong> ${data.role_info}</p>
-    </div>
-`;
+            </div>
+            <div class="info-box">
+                <p><strong>Role Info:</strong> ${data.role_info}</p>
+            </div>
+        `;
     } else if (type === 'vote') {
         promptP.textContent = `Vote on the proposed team: ${data.proposed_team.join(', ')} `;
         html = `
-    < div class="action-buttons" >
+            <div class="action-buttons">
                 <button class="btn-success" onclick="submitAction('APPROVE')">APPROVE</button>
                 <button class="btn-danger" onclick="submitAction('REJECT')">REJECT</button>
-            </div >
-    <div class="info-box">
-        <p><strong>Role Info:</strong> ${data.role_info}</p>
-    </div>
-`;
+            </div>
+            <div class="info-box">
+                <p><strong>Role Info:</strong> ${data.role_info}</p>
+            </div>
+        `;
     } else if (type === 'mission_action') {
         promptP.textContent = `Mission Phase: Choose your action.`;
         html = `
-    < div class="action-buttons" >
+            <div class="action-buttons">
                 <button class="btn-success" onclick="submitAction('SUCCESS')">SUCCESS</button>
                 <button class="btn-danger" onclick="submitAction('FAIL')">FAIL</button>
-            </div >
-    <div class="info-box">
-        <p><strong>Role Info:</strong> ${data.role_info}</p>
-        <p class="warning-text">Note: Good players MUST choose SUCCESS.</p>
-    </div>
-`;
+            </div>
+            <div class="info-box">
+                <p><strong>Role Info:</strong> ${data.role_info}</p>
+                <p class="warning-text">Note: Good players MUST choose SUCCESS.</p>
+            </div>
+        `;
     } else if (type === 'assassination') {
         promptP.textContent = `Assassin Phase: Identify Merlin!`;
 
         const playersHtml = data.good_players.map(name => `
-    < label class="radio-label" >
-        <input type="radio" name="assassinTarget" value="${name}">
-            ${name}
-        </label>
-`).join('');
+            <label class="radio-label">
+                <input type="radio" name="assassinTarget" value="${name}">
+                ${name}
+            </label>
+        `).join('');
 
         html = `
-    < div class="form-group" >
+            <div class="form-group">
                 <div class="radio-group">
                     ${playersHtml}
                 </div>
                 <button class="btn-danger" onclick="submitAssassinTarget()">Assassinate</button>
-            </div >
-    <div class="info-box">
-        <p><strong>Role Info:</strong> ${data.role_info}</p>
-    </div>
-`;
+            </div>
+            <div class="info-box">
+                <p><strong>Role Info:</strong> ${data.role_info}</p>
+            </div>
+        `;
     }
 
     contentDiv.innerHTML = html;

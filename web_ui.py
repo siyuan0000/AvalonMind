@@ -54,7 +54,12 @@ def load_env_api_key():
         with open(env_path, 'r') as f:
             for line in f:
                 if line.strip().startswith('DEEPSEEK_API_KEY='):
-                    return line.strip().split('=', 1)[1]
+                    key = line.strip().split('=', 1)[1].strip()
+                    # Remove quotes if present
+                    if (key.startswith('"') and key.endswith('"')) or \
+                       (key.startswith("'") and key.endswith("'")):
+                        key = key[1:-1]
+                    return key
     return os.environ.get('DEEPSEEK_API_KEY')
 
 def handle_log_action(message):
@@ -148,6 +153,10 @@ def run_game_thread(config, user_id=None):
         
         # Fixed DeepSeek API Key (from config or env)
         api_key = config.get('api_key') or load_env_api_key()
+        print(f"Loaded API Key: {'*' * 5 + api_key[-4:] if api_key else 'None'}")
+        
+        if not api_key:
+            raise ValueError("DeepSeek API Key not found. Please check .env.local")
         
         # Determine User Player (Player 0 - Alice)
         user_mode = config.get('user_mode', 'watch') # 'play' or 'watch'
