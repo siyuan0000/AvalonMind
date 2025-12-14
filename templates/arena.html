@@ -7,6 +7,7 @@
     <title>Avalon Arena</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -14,59 +15,57 @@
             color: #e2e8f0;
         }
 
-        .card {
-            background-color: #1e293b;
-            border-radius: 0.5rem;
-            padding: 1.5rem;
-            border: 1px solid #334155;
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
         }
 
         .btn {
-            padding: 0.5rem 1rem;
-            border-radius: 0.375rem;
-            font-weight: 500;
-            transition: all 0.2s;
+            transition: all 0.2s ease;
         }
 
-        .btn-primary {
-            background-color: #3b82f6;
-            color: white;
-        }
-
-        .btn-primary:hover {
-            background-color: #2563eb;
-        }
-
-        .btn-danger {
-            background-color: #ef4444;
-            color: white;
-        }
-
-        .btn-danger:hover {
-            background-color: #dc2626;
-        }
-
-        .btn-secondary {
-            background-color: #475569;
-            color: white;
-        }
-
-        .btn-secondary:hover {
-            background-color: #334155;
+        .btn:active {
+            transform: scale(0.98);
         }
 
         .input-dark {
             background-color: #0f172a;
             border: 1px solid #334155;
             color: white;
-            padding: 0.5rem;
-            border-radius: 0.375rem;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
             width: 100%;
+            transition: border-color 0.2s;
+        }
+
+        .input-dark:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
         }
 
         .tab-active {
-            border-bottom: 2px solid #3b82f6;
-            color: #3b82f6;
+            border-bottom: 2px solid #6366f1;
+            color: #818cf8;
+            background: rgba(99, 102, 241, 0.1);
         }
 
         .tab-inactive {
@@ -75,79 +74,125 @@
 
         .tab-inactive:hover {
             color: #e2e8f0;
+            background: rgba(255, 255, 255, 0.05);
         }
     </style>
 </head>
 
-<body class="min-h-screen p-6">
+<body class="min-h-screen flex flex-col">
 
-    <div class="max-w-7xl mx-auto">
-        <!-- Header -->
-        <div class="flex justify-between items-center mb-8">
-            <h1 class="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-blue-400 to-purple-500">
-                Avalon Arena</h1>
-            <div class="space-x-4">
-                <a href="/" class="text-gray-400 hover:text-white">Back to Game</a>
+    <!-- Navbar -->
+    <nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <span class="text-white font-bold text-lg">A</span>
+                    </div>
+                    <span
+                        class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Avalon
+                        Arena</span>
+                </div>
+                <div class="flex items-center gap-6">
+                    <a href="/" class="text-slate-400 hover:text-white transition-colors px-1 py-4">Control Panel</a>
+                    <a href="/arena" class="text-white font-medium border-b-2 border-indigo-500 px-1 py-4">Arena</a>
+                </div>
             </div>
         </div>
+    </nav>
 
-        <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-7xl">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
 
             <!-- Left Column: Configuration -->
             <div class="lg:col-span-1 space-y-6">
 
                 <!-- Agent Config -->
-                <div class="card">
-                    <h2 class="text-xl font-semibold mb-4">Agent Configuration</h2>
+                <div class="glass-panel rounded-xl p-6">
+                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        Agent Configuration
+                    </h2>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Load Config</label>
-                        <select id="configSelect" class="input-dark" onchange="loadConfig()">
-                            <option value="">-- Select Saved Config --</option>
-                        </select>
-                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">Load
+                                Config</label>
+                            <select id="configSelect" class="input-dark" onchange="loadConfig()">
+                                <option value="">-- Select Saved Config --</option>
+                            </select>
+                        </div>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Agent Name</label>
-                        <input type="text" id="agentName" class="input-dark" placeholder="e.g., Aggressive Merlin">
-                    </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">Agent
+                                Name</label>
+                            <input type="text" id="agentName" class="input-dark" placeholder="e.g., Aggressive Merlin">
+                        </div>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Base Model</label>
-                        <select id="baseModel" class="input-dark">
-                            <option value="ollama/deepseek-r1">Ollama: deepseek-r1</option>
-                            <option value="deepseek/deepseek-chat">DeepSeek API: deepseek-chat</option>
-                            <option value="deepseek/deepseek-reasoner">DeepSeek API: deepseek-reasoner</option>
-                        </select>
-                    </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">Base
+                                Model</label>
+                            <select id="baseModel" class="input-dark">
+                                <option value="ollama/deepseek-r1">Ollama: deepseek-r1</option>
+                                <option value="deepseek/deepseek-chat">DeepSeek API: deepseek-chat</option>
+                                <option value="deepseek/deepseek-reasoner">DeepSeek API: deepseek-reasoner</option>
+                            </select>
+                        </div>
 
-                    <div class="flex space-x-2">
-                        <button onclick="saveConfig()" class="btn btn-primary flex-1">Save Config</button>
-                        <button onclick="deleteConfig()" class="btn btn-danger flex-1">Delete</button>
+                        <div class="flex space-x-3 pt-2">
+                            <button onclick="saveConfig()"
+                                class="flex-1 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors text-sm">Save
+                                Config</button>
+                            <button onclick="deleteConfig()"
+                                class="flex-1 py-2 bg-slate-700 hover:bg-red-900/50 text-white font-medium rounded-lg transition-colors text-sm">Delete</button>
+                        </div>
                     </div>
                 </div>
 
                 <!-- Arena Setup -->
-                <div class="card">
-                    <h2 class="text-xl font-semibold mb-4">Arena Setup</h2>
+                <div class="glass-panel rounded-xl p-6">
+                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                        </svg>
+                        Arena Setup
+                    </h2>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Hero Agent</label>
-                        <div id="heroAgentDisplay" class="text-blue-400 font-medium mb-2">None Selected</div>
-                        <button onclick="setHeroFromCurrent()" class="btn btn-secondary text-sm w-full">Use Current
-                            Config as Hero</button>
-                    </div>
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">Hero
+                                Agent</label>
+                            <div id="heroAgentDisplay" class="text-indigo-400 font-bold text-lg mb-2 truncate">None
+                                Selected</div>
+                            <button onclick="setHeroFromCurrent()"
+                                class="w-full py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 text-sm rounded-lg transition-colors">Use
+                                Current Config as Hero</button>
+                        </div>
 
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-400 mb-1">Number of Games</label>
-                        <input type="number" id="numGames" class="input-dark" value="10" min="1" max="100">
-                    </div>
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-1 uppercase tracking-wide">Number
+                                of Games</label>
+                            <input type="number" id="numGames" class="input-dark" value="10" min="1" max="100">
+                        </div>
 
-                    <div id="arenaControls">
-                        <button onclick="startArena()" class="btn btn-primary w-full mb-2">Start Arena Batch</button>
-                    </div>
-                    <div id="arenaStopControls" class="hidden">
-                        <button onclick="stopArena()" class="btn btn-danger w-full mb-2">Stop Arena</button>
+                        <div id="arenaControls" class="pt-2">
+                            <button onclick="startArena()"
+                                class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-lg shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5">Start
+                                Arena Batch</button>
+                        </div>
+                        <div id="arenaStopControls" class="hidden pt-2">
+                            <button onclick="stopArena()"
+                                class="w-full py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg shadow-lg shadow-red-500/25 transition-all">Stop
+                                Arena</button>
+                        </div>
                     </div>
                 </div>
 
@@ -155,83 +200,111 @@
 
             <!-- Middle Column: Prompt Editor -->
             <div class="lg:col-span-1 space-y-6">
-                <div class="card h-full flex flex-col">
-                    <h2 class="text-xl font-semibold mb-4">Prompt Editor</h2>
+                <div class="glass-panel rounded-xl flex flex-col h-full overflow-hidden">
+                    <div class="p-4 border-b border-slate-700 bg-slate-800/50">
+                        <h2 class="text-lg font-semibold text-white flex items-center gap-2">
+                            <svg class="w-5 h-5 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z">
+                                </path>
+                            </svg>
+                            Prompt Editor
+                        </h2>
+                    </div>
 
-                    <div class="flex space-x-2 mb-4 border-b border-gray-700 overflow-x-auto">
-                        <button onclick="switchTab('team_proposal')" class="px-3 py-2 text-sm font-medium tab-active"
+                    <div class="flex border-b border-slate-700 overflow-x-auto bg-slate-900/30">
+                        <button onclick="switchTab('team_proposal')"
+                            class="px-4 py-3 text-xs font-bold uppercase tracking-wide tab-active transition-colors"
                             id="tab-team_proposal">Proposal</button>
-                        <button onclick="switchTab('discussion')" class="px-3 py-2 text-sm font-medium tab-inactive"
+                        <button onclick="switchTab('discussion')"
+                            class="px-4 py-3 text-xs font-bold uppercase tracking-wide tab-inactive transition-colors"
                             id="tab-discussion">Discussion</button>
-                        <button onclick="switchTab('vote')" class="px-3 py-2 text-sm font-medium tab-inactive"
+                        <button onclick="switchTab('vote')"
+                            class="px-4 py-3 text-xs font-bold uppercase tracking-wide tab-inactive transition-colors"
                             id="tab-vote">Vote</button>
-                        <button onclick="switchTab('mission_action')" class="px-3 py-2 text-sm font-medium tab-inactive"
+                        <button onclick="switchTab('mission_action')"
+                            class="px-4 py-3 text-xs font-bold uppercase tracking-wide tab-inactive transition-colors"
                             id="tab-mission_action">Mission</button>
-                        <button onclick="switchTab('assassination')" class="px-3 py-2 text-sm font-medium tab-inactive"
+                        <button onclick="switchTab('assassination')"
+                            class="px-4 py-3 text-xs font-bold uppercase tracking-wide tab-inactive transition-colors"
                             id="tab-assassination">Assassin</button>
                     </div>
 
-                    <div class="flex-1">
+                    <div class="flex-1 relative">
                         <textarea id="promptEditor"
-                            class="input-dark h-full font-mono text-xs leading-relaxed resize-none"
+                            class="absolute inset-0 w-full h-full bg-slate-900/50 p-4 font-mono text-xs leading-relaxed resize-none text-slate-300 focus:outline-none"
                             spellcheck="false"></textarea>
                     </div>
 
-                    <div class="mt-2 text-xs text-gray-500">
-                        Use {role_info}, {game_state}, {game_history} as placeholders.
+                    <div
+                        class="p-3 bg-slate-800/80 border-t border-slate-700 text-[10px] text-slate-500 flex justify-between">
+                        <span>Variables: {role_info}, {game_state}, {game_history}</span>
+                        <span class="text-indigo-400">Markdown Supported</span>
                     </div>
                 </div>
             </div>
 
             <!-- Right Column: Results -->
             <div class="lg:col-span-1 space-y-6">
-                <div class="card">
-                    <h2 class="text-xl font-semibold mb-4">Live Results</h2>
+                <div class="glass-panel rounded-xl p-6 h-full flex flex-col">
+                    <h2 class="text-lg font-semibold text-white mb-6 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z">
+                            </path>
+                        </svg>
+                        Live Results
+                    </h2>
 
-                    <div class="mb-6">
-                        <div class="flex justify-between text-sm mb-1">
-                            <span class="text-gray-400">Progress</span>
+                    <div class="mb-8">
+                        <div class="flex justify-between text-xs font-bold uppercase tracking-wider mb-2">
+                            <span class="text-slate-400">Batch Progress</span>
                             <span id="progressText" class="text-white">0/0</span>
                         </div>
-                        <div class="w-full bg-gray-700 rounded-full h-2.5">
-                            <div id="progressBar" class="bg-blue-600 h-2.5 rounded-full" style="width: 0%"></div>
+                        <div class="w-full bg-slate-800 rounded-full h-3 overflow-hidden border border-slate-700">
+                            <div id="progressBar"
+                                class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500"
+                                style="width: 0%"></div>
                         </div>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 mb-6">
-                        <div class="bg-slate-800 p-3 rounded text-center">
-                            <div class="text-gray-400 text-xs uppercase">Win Rate</div>
-                            <div id="winRate" class="text-2xl font-bold text-green-400">0%</div>
+                    <div class="grid grid-cols-2 gap-4 mb-8">
+                        <div class="bg-slate-800/50 border border-slate-700 p-4 rounded-xl text-center">
+                            <div class="text-slate-500 text-xs uppercase tracking-wider font-bold mb-1">Win Rate</div>
+                            <div id="winRate" class="text-3xl font-bold text-emerald-400">0%</div>
                         </div>
-                        <div class="bg-slate-800 p-3 rounded text-center">
-                            <div class="text-gray-400 text-xs uppercase">Games Won</div>
-                            <div id="gamesWon" class="text-2xl font-bold text-white">0</div>
+                        <div class="bg-slate-800/50 border border-slate-700 p-4 rounded-xl text-center">
+                            <div class="text-slate-500 text-xs uppercase tracking-wider font-bold mb-1">Games Won</div>
+                            <div id="gamesWon" class="text-3xl font-bold text-white">0</div>
                         </div>
                     </div>
 
-                    <div class="h-64 mb-4">
+                    <div class="h-48 mb-6 relative">
                         <canvas id="resultsChart"></canvas>
                     </div>
 
-                    <div class="overflow-y-auto max-h-64">
-                        <table class="w-full text-sm text-left text-gray-400">
-                            <thead class="text-xs uppercase bg-gray-700 text-gray-200">
-                                <tr>
-                                    <th class="px-3 py-2">#</th>
-                                    <th class="px-3 py-2">Role</th>
-                                    <th class="px-3 py-2">Result</th>
-                                </tr>
-                            </thead>
-                            <tbody id="resultsTableBody">
-                                <!-- Rows added dynamically -->
-                            </tbody>
-                        </table>
+                    <div class="flex-grow overflow-hidden flex flex-col">
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Recent Matches</div>
+                        <div class="overflow-y-auto pr-2 flex-grow">
+                            <table class="w-full text-sm text-left text-slate-400">
+                                <thead class="text-xs uppercase bg-slate-800/50 text-slate-300 sticky top-0">
+                                    <tr>
+                                        <th class="px-3 py-2 rounded-tl-lg">#</th>
+                                        <th class="px-3 py-2">Role</th>
+                                        <th class="px-3 py-2 rounded-tr-lg text-right">Result</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="resultsTableBody" class="divide-y divide-slate-800">
+                                    <!-- Rows added dynamically -->
+                                </tbody>
+                            </table>
+                        </div>
                     </div>
                 </div>
             </div>
 
         </div>
-    </div>
+    </main>
 
     <script>
         // State
@@ -274,8 +347,10 @@
             currentConfig.prompts[currentTab] = document.getElementById('promptEditor').value;
 
             // Switch tab UI
-            document.getElementById(`tab-${currentTab}`).className = "px-3 py-2 text-sm font-medium tab-inactive";
-            document.getElementById(`tab-${tab}`).className = "px-3 py-2 text-sm font-medium tab-active";
+            document.querySelectorAll('[id^="tab-"]').forEach(el => {
+                el.className = "px-4 py-3 text-xs font-bold uppercase tracking-wide tab-inactive transition-colors";
+            });
+            document.getElementById(`tab-${tab}`).className = "px-4 py-3 text-xs font-bold uppercase tracking-wide tab-active transition-colors";
 
             // Update state
             currentTab = tab;
@@ -437,14 +512,14 @@
             tbody.innerHTML = '';
             status.results.slice().reverse().forEach((r, i) => {
                 const tr = document.createElement('tr');
-                tr.className = "border-b border-gray-700 hover:bg-gray-700/50";
+                tr.className = "hover:bg-slate-800/50 transition-colors";
                 tr.innerHTML = `
-                    <td class="px-3 py-2 text-gray-400">${status.results.length - i}</td>
+                    <td class="px-3 py-2 text-slate-500 font-mono text-xs">${status.results.length - i}</td>
                     <td class="px-3 py-2">
-                        <span class="${r.hero_is_evil ? 'text-red-400' : 'text-blue-400'}">${r.hero_role}</span>
+                        <span class="${r.hero_is_evil ? 'text-red-400' : 'text-blue-400'} font-medium text-xs">${r.hero_role}</span>
                     </td>
-                    <td class="px-3 py-2">
-                        <span class="${r.hero_won ? 'text-green-400 font-bold' : 'text-gray-500'}">${r.hero_won ? 'WIN' : 'LOSS'}</span>
+                    <td class="px-3 py-2 text-right">
+                        <span class="${r.hero_won ? 'text-emerald-400 bg-emerald-400/10 border border-emerald-400/20' : 'text-slate-500 bg-slate-800 border border-slate-700'} px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider">${r.hero_won ? 'WIN' : 'LOSS'}</span>
                     </td>
                 `;
                 tbody.appendChild(tr);
@@ -463,15 +538,17 @@
                     labels: ['Win', 'Loss'],
                     datasets: [{
                         data: [0, 0],
-                        backgroundColor: ['#4ade80', '#ef4444'],
-                        borderWidth: 0
+                        backgroundColor: ['#34d399', '#ef4444'],
+                        borderWidth: 0,
+                        hoverOffset: 4
                     }]
                 },
                 options: {
                     responsive: true,
                     maintainAspectRatio: false,
+                    cutout: '70%',
                     plugins: {
-                        legend: { position: 'bottom', labels: { color: '#94a3b8' } }
+                        legend: { position: 'bottom', labels: { color: '#94a3b8', font: { size: 10, family: 'Inter' }, usePointStyle: true, boxWidth: 6 } }
                     }
                 }
             });

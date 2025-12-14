@@ -4,130 +4,298 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Avalon AI Game - Control Panel</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <title>Avalon AI Game</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+        }
+
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(148, 163, 184, 0.1);
+        }
+
+        .btn {
+            transition: all 0.2s ease;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .input-dark {
+            background-color: #0f172a;
+            border: 1px solid #334155;
+            color: white;
+            padding: 0.5rem 1rem;
+            border-radius: 0.5rem;
+            width: 100%;
+            transition: border-color 0.2s;
+        }
+
+        .input-dark:focus {
+            outline: none;
+            border-color: #6366f1;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+
+        /* Animations */
+        @keyframes pulse-glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 15px rgba(99, 102, 241, 0.2);
+            }
+
+            50% {
+                box-shadow: 0 0 25px rgba(99, 102, 241, 0.4);
+            }
+        }
+
+        .animate-pulse-glow {
+            animation: pulse-glow 3s infinite;
+        }
+    </style>
 </head>
 
-<body>
-    <div class="container">
-        <header>
-            <h1>Avalon AI Game Control Panel</h1>
-            <div id="authContainer" class="auth-container">
-                <button id="loginBtn" class="btn secondary">Login / Sign Up</button>
-                <div id="userDashboard" style="display: none;">
-                    <span id="userEmail">user@example.com</span>
-                    <span class="token-badge">Tokens: <span id="tokenCount">0</span></span>
-                    <button id="logoutBtn" class="btn small">Logout</button>
-                </div>
-            </div>
-            <p class="subtitle">Social Deduction Game with AI Players</p>
-            <nav>
-                <a href="/" class="active">Control Panel</a>
-                <a href="/arena">Arena</a>
-                <!-- <a href="/viewer">Game Logs</a> -->
-            </nav>
-        </header>
+<body class="min-h-screen flex flex-col">
 
-        <!-- Auth Modal -->
-        <div id="authModal" class="modal" style="display: none;">
-            <div class="modal-content">
-                <span class="close">&times;</span>
-                <h2>Login / Sign Up</h2>
-                <form id="authForm">
-                    <div class="form-group">
-                        <label for="email">Email:</label>
-                        <input type="email" id="email" required>
+    <!-- Navbar -->
+    <nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-16">
+                <div class="flex items-center gap-3">
+                    <div
+                        class="w-8 h-8 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                        <span class="text-white font-bold text-lg">A</span>
                     </div>
-                    <div class="form-group">
-                        <label for="password">Password:</label>
-                        <input type="password" id="password" required>
+                    <span
+                        class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-400">Avalon
+                        AI</span>
+                </div>
+                <div class="flex items-center gap-6">
+                    <a href="/" class="text-white font-medium border-b-2 border-indigo-500 px-1 py-4">Control Panel</a>
+                    <a href="/arena" class="text-slate-400 hover:text-white transition-colors px-1 py-4">Arena</a>
+
+                    <div id="authContainer" class="flex items-center gap-4 ml-4 pl-4 border-l border-slate-800">
+                        <button id="loginBtn"
+                            class="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">Login</button>
+                        <div id="userDashboard" class="hidden flex items-center gap-3">
+                            <div class="flex flex-col items-end">
+                                <span id="userEmail" class="text-xs text-slate-400">user@example.com</span>
+                                <span
+                                    class="text-xs font-mono text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">
+                                    <span id="tokenCount">0</span> tokens
+                                </span>
+                            </div>
+                            <button id="logoutBtn"
+                                class="text-xs text-slate-500 hover:text-white transition-colors">Logout</button>
+                        </div>
                     </div>
-                    <div class="auth-buttons">
-                        <button type="submit" id="submitLogin" class="btn primary">Login</button>
-                        <button type="button" id="submitSignup" class="btn secondary">Sign Up</button>
-                    </div>
-                    <p id="authMessage" class="error-message"></p>
-                </form>
+                </div>
             </div>
         </div>
+    </nav>
 
-        <main>
-            <!-- Game Status Section -->
-            <section class="card status-card">
-                <h2>Game Status</h2>
-                <div id="gameStatus" class="status-display">
-                    <div class="status-badge idle">Idle</div>
-                    <p id="statusMessage">Ready to start a new game</p>
-                    <p id="gameAction" class="action-text"></p>
-                </div>
-            </section>
+    <!-- Main Content -->
+    <main class="flex-grow container mx-auto px-4 py-8 max-w-7xl">
 
-            <!-- Game Interaction Section (Hidden by default) -->
-            <section id="interactionCard" class="card interaction-card" style="display: none;">
-                <h2>Your Turn: <span id="interactionPlayer">Player</span></h2>
-                <p id="interactionPrompt" class="interaction-prompt">Please make a decision...</p>
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
 
-                <div id="interactionContent" class="interaction-content">
-                    <!-- Dynamic content will be injected here -->
-                </div>
-            </section>
+            <!-- Left Column: Controls & Status -->
+            <div class="lg:col-span-4 space-y-6">
 
-            <!-- Live Game Log & Reasoning -->
-            <div class="game-panels">
-                <section class="card log-card">
-                    <h2>Live Game Log</h2>
-                    <div id="gameLog" class="log-container">
-                        <p class="log-placeholder">Waiting for game to start...</p>
+                <!-- Status Card -->
+                <div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
+                    <div
+                        class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-indigo-500/20">
                     </div>
-                </section>
 
-                <section class="card reasoning-card">
-                    <h2>AI Reasoning</h2>
-                    <div id="aiReasoning" class="reasoning-container">
-                        <p class="log-placeholder">AI thoughts will appear here...</p>
+                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        Game Status
+                    </h2>
+
+                    <div id="gameStatus" class="space-y-4">
+                        <div class="flex items-center justify-between">
+                            <span class="text-slate-400 text-sm">Current State</span>
+                            <span
+                                class="status-badge px-3 py-1 rounded-full text-xs font-bold bg-slate-800 text-slate-400 border border-slate-700 uppercase tracking-wider idle">Idle</span>
+                        </div>
+                        <p id="statusMessage" class="text-sm text-slate-300">Ready to start a new game session.</p>
+                        <p id="gameAction" class="text-xs text-indigo-300 font-mono min-h-[1.5em]"></p>
                     </div>
-                </section>
+                </div>
+
+                <!-- Configuration Card -->
+                <div class="glass-panel rounded-xl p-6">
+                    <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                            </path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        </svg>
+                        Configuration
+                    </h2>
+
+                    <div class="space-y-4">
+                        <div>
+                            <label class="block text-xs font-medium text-slate-400 mb-2 uppercase tracking-wide">Your
+                                Role</label>
+                            <div class="grid grid-cols-2 gap-3 radio-group">
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="userMode" value="play" checked class="peer sr-only">
+                                    <div
+                                        class="p-3 rounded-lg border border-slate-700 bg-slate-800/50 peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 hover:bg-slate-800 transition-all text-center">
+                                        <div class="text-sm font-medium text-white">Player</div>
+                                        <div class="text-xs text-slate-500 mt-1">Play as Alice</div>
+                                    </div>
+                                </label>
+                                <label class="cursor-pointer">
+                                    <input type="radio" name="userMode" value="watch" class="peer sr-only">
+                                    <div
+                                        class="p-3 rounded-lg border border-slate-700 bg-slate-800/50 peer-checked:border-indigo-500 peer-checked:bg-indigo-500/10 hover:bg-slate-800 transition-all text-center">
+                                        <div class="text-sm font-medium text-white">Observer</div>
+                                        <div class="text-xs text-slate-500 mt-1">Watch AI Battle</div>
+                                    </div>
+                                </label>
+                            </div>
+                        </div>
+
+                        <button id="startButton" onclick="startGame()"
+                            class="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-lg shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5">
+                            Start New Game
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Interaction Card (Hidden) -->
+                <div id="interactionCard"
+                    class="hidden glass-panel rounded-xl p-6 border-l-4 border-l-amber-500 animate-pulse-glow">
+                    <h2 class="text-lg font-bold text-white mb-2 flex items-center gap-2">
+                        <span class="w-2 h-2 bg-amber-500 rounded-full animate-ping"></span>
+                        Action Required
+                    </h2>
+                    <p id="interactionPrompt" class="text-slate-300 mb-4">Please make a decision...</p>
+                    <div id="interactionContent" class="space-y-2">
+                        <!-- Dynamic buttons injected here -->
+                    </div>
+                </div>
+
             </div>
 
-            <!-- Configuration Section -->
-            <section class="card config-card">
-                <h2>Game Configuration</h2>
+            <!-- Right Column: Logs & Reasoning -->
+            <div class="lg:col-span-8 space-y-6">
 
-                <div class="form-group">
-                    <label>Game Mode:</label>
-                    <div class="radio-group">
-                        <label class="radio-label">
-                            <input type="radio" name="userMode" value="play" checked>
-                            Play Yourself (as Alice)
-                        </label>
-                        <label class="radio-label">
-                            <input type="radio" name="userMode" value="watch">
-                            Watch AI (All DeepSeek)
-                        </label>
+                <!-- Game Log -->
+                <div class="glass-panel rounded-xl flex flex-col h-[500px]">
+                    <div
+                        class="p-4 border-b border-slate-700 flex justify-between items-center bg-slate-800/50 rounded-t-xl">
+                        <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider">Mission Log</h2>
+                        <div class="flex gap-2">
+                            <span class="w-3 h-3 rounded-full bg-red-500/20 border border-red-500/50"></span>
+                            <span class="w-3 h-3 rounded-full bg-yellow-500/20 border border-yellow-500/50"></span>
+                            <span class="w-3 h-3 rounded-full bg-green-500/20 border border-green-500/50"></span>
+                        </div>
+                    </div>
+                    <div id="gameLog" class="flex-grow overflow-y-auto p-4 space-y-3 font-mono text-sm bg-slate-900/50">
+                        <p class="text-slate-500 text-center italic mt-20">Waiting for game initialization...</p>
                     </div>
                 </div>
 
-                <!-- Start Button -->
-                <div class="action-buttons">
-                    <button id="startButton" class="btn-primary" onclick="startGame()">Start Game</button>
+                <!-- AI Reasoning -->
+                <div class="glass-panel rounded-xl flex flex-col h-[300px]">
+                    <div class="p-4 border-b border-slate-700 bg-slate-800/50 rounded-t-xl">
+                        <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <svg class="w-4 h-4 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            AI Thought Process
+                        </h2>
+                    </div>
+                    <div id="aiReasoning"
+                        class="flex-grow overflow-y-auto p-4 space-y-4 font-mono text-xs bg-slate-900/50 text-slate-300">
+                        <p class="text-slate-600 text-center italic mt-10">AI internal monologue will appear here...</p>
+                    </div>
                 </div>
-            </section>
 
-            <!-- Recent Games Section (Hidden) -->
-            <!--
-            <section class="card">
-                <h2>Recent Games</h2>
-                <div id="recentGames" class="games-list">
-                    <p class="loading">Loading...</p>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="border-t border-slate-800 py-8 mt-8">
+        <div class="container mx-auto px-4 text-center text-slate-500 text-sm">
+            <p>&copy; 2025 Avalon AI Research. Built with ❤️ by Lsyon.</p>
+        </div>
+    </footer>
+
+    <!-- Auth Modal -->
+    <div id="authModal"
+        class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
+        <div
+            class="glass-panel w-full max-w-md p-8 rounded-2xl shadow-2xl transform transition-all scale-100 border border-slate-700">
+            <button class="close absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                    </path>
+                </svg>
+            </button>
+
+            <div class="text-center mb-8">
+                <h2 class="text-2xl font-bold text-white mb-2">Welcome Back</h2>
+                <p class="text-slate-400 text-sm">Sign in to track your stats and tokens</p>
+            </div>
+
+            <form id="authForm" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1 uppercase">Email Address</label>
+                    <input type="email" id="email" required class="input-dark" placeholder="name@example.com">
                 </div>
-            </section>
-            -->
-        </main>
+                <div>
+                    <label class="block text-xs font-medium text-slate-400 mb-1 uppercase">Password</label>
+                    <input type="password" id="password" required class="input-dark" placeholder="••••••••">
+                </div>
 
-        <footer>
-            <p>Lsyon</p>
-            <p><a href="https://www.linkedin.com/in/phos04/">Find me on LinkedIn</a></p>
-        </footer>
+                <p id="authMessage" class="text-red-400 text-xs min-h-[1.5em] text-center"></p>
+
+                <div class="flex gap-3 pt-2">
+                    <button type="submit" id="submitLogin"
+                        class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors">Login</button>
+                    <button type="button" id="submitSignup"
+                        class="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors">Sign
+                        Up</button>
+                </div>
+            </form>
+        </div>
     </div>
 
     <script src="/static/script.js"></script>

@@ -220,30 +220,46 @@ function connectToStream() {
 function appendLog(message, type = 'info') {
     const logContainer = document.getElementById('gameLog');
     const entry = document.createElement('div');
-    entry.className = `log-entry ${type}`;
-    entry.innerHTML = `<span class="timestamp">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+
+    let colorClass = 'text-slate-300';
+    if (type === 'discussion') colorClass = 'text-indigo-300';
+    if (type === 'approve') colorClass = 'text-emerald-400';
+    if (type === 'reject') colorClass = 'text-red-400';
+    if (type === 'phase') colorClass = 'text-amber-400 font-bold border-b border-amber-500/20 pb-1 mb-2 mt-4 text-center uppercase tracking-wider text-xs';
+
+    entry.className = `mb-2 pb-2 border-b border-slate-800/50 last:border-0 ${colorClass}`;
+
+    if (type === 'phase') {
+        entry.innerHTML = message;
+    } else {
+        entry.innerHTML = `<span class="text-slate-500 text-xs mr-2 font-mono">[${new Date().toLocaleTimeString()}]</span> ${message}`;
+    }
+
     logContainer.appendChild(entry);
     logContainer.scrollTop = logContainer.scrollHeight;
 
     // Remove placeholder if present
-    const placeholder = logContainer.querySelector('.log-placeholder');
-    if (placeholder) placeholder.remove();
+    const placeholder = logContainer.querySelector('p.text-slate-500'); // Updated selector for placeholder
+    if (placeholder && placeholder.textContent.includes('Waiting')) placeholder.remove();
 }
 
 function appendReasoning(player, content) {
     const container = document.getElementById('aiReasoning');
     const entry = document.createElement('div');
-    entry.className = 'reasoning-entry';
+    entry.className = 'mb-4 bg-slate-800/30 border border-slate-700/50 rounded p-3';
     entry.innerHTML = `
-        <div class="reasoning-header">${player} is thinking...</div>
-        <div class="reasoning-content">${content}</div>
+        <div class="text-xs font-bold text-indigo-400 mb-1 uppercase tracking-wider flex items-center gap-2">
+            <span class="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse"></span>
+            ${player}
+        </div>
+        <div class="text-slate-300 whitespace-pre-wrap leading-relaxed">${content}</div>
     `;
     container.appendChild(entry);
     container.scrollTop = container.scrollHeight;
 
     // Remove placeholder if present
-    const placeholder = container.querySelector('.log-placeholder');
-    if (placeholder) placeholder.remove();
+    const placeholder = container.querySelector('p.text-slate-600'); // Updated selector
+    if (placeholder && placeholder.textContent.includes('AI internal')) placeholder.remove();
 }
 
 // Update game status display
@@ -258,7 +274,7 @@ async function updateGameStatus() {
         const startButton = document.getElementById('startButton');
 
         // Update badge
-        statusBadge.className = 'status-badge ' + status.status;
+        statusBadge.className = 'status-badge px-3 py-1 rounded-full text-xs font-bold border uppercase tracking-wider ' + getStatusClasses(status.status);
         statusBadge.textContent = status.status.replace('_', ' ');
 
         // Update action text
@@ -348,99 +364,99 @@ function showInputForm(inputRequest) {
     if (type === 'discussion') {
         promptP.textContent = `Discussion Phase: What do you want to say about the proposed team(${data.proposed_team.join(', ')}) ? `;
         html = `
-            <div class="form-group">
-                <textarea id="discussionInput" rows="3" placeholder="Enter your comment..."></textarea>
-                <button class="btn-primary" onclick="submitAction(document.getElementById('discussionInput').value)">Submit Comment</button>
+            <div class="space-y-4">
+                <textarea id="discussionInput" rows="3" class="input-dark w-full" placeholder="Enter your comment..."></textarea>
+                <button class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors" onclick="submitAction(document.getElementById('discussionInput').value)">Submit Comment</button>
             </div>
-            <div class="info-box">
-                <p><strong>Role Info:</strong> ${data.role_info}</p>
-                <p><strong>Game State:</strong> ${data.game_state}</p>
+            <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400 border border-slate-700">
+                <p class="mb-1"><strong class="text-slate-300">Role Info:</strong> ${data.role_info}</p>
+                <p><strong class="text-slate-300">Game State:</strong> ${data.game_state}</p>
             </div>
         `;
     } else if (type === 'team_proposal') {
         promptP.textContent = `You are the Leader! Select ${data.team_size} players for the mission.`;
 
         const playersHtml = data.player_names.map(name => `
-            <label class="checkbox-label">
-                <input type="checkbox" name="teamSelect" value="${name}">
-                ${name}
+            <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-800 cursor-pointer transition-colors">
+                <input type="checkbox" name="teamSelect" value="${name}" class="w-4 h-4 text-indigo-600 rounded border-slate-600 focus:ring-indigo-500 bg-slate-700">
+                <span class="text-sm font-medium text-slate-200">${name}</span>
             </label>
         `).join('');
 
         html = `
-            <div class="form-group">
-                <div class="checkbox-group">
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
                     ${playersHtml}
                 </div>
-                <button class="btn-primary" onclick="submitTeamProposal(${data.team_size})">Propose Team</button>
+                <button class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors" onclick="submitTeamProposal(${data.team_size})">Propose Team</button>
             </div>
-            <div class="info-box">
-                <p><strong>Role Info:</strong> ${data.role_info}</p>
+            <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400 border border-slate-700">
+                <p><strong class="text-slate-300">Role Info:</strong> ${data.role_info}</p>
             </div>
         `;
     } else if (type === 'leader_final_proposal') {
         promptP.textContent = `Final Decision: Confirm or change your team proposal.`;
 
         const playersHtml = data.player_names.map(name => `
-            <label class="checkbox-label">
-                <input type="checkbox" name="teamSelect" value="${name}" ${data.initial_team.includes(name) ? 'checked' : ''}>
-                ${name}
+            <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-800 cursor-pointer transition-colors">
+                <input type="checkbox" name="teamSelect" value="${name}" ${data.initial_team.includes(name) ? 'checked' : ''} class="w-4 h-4 text-indigo-600 rounded border-slate-600 focus:ring-indigo-500 bg-slate-700">
+                <span class="text-sm font-medium text-slate-200">${name}</span>
             </label>
         `).join('');
 
         html = `
-            <div class="form-group">
-                <div class="checkbox-group">
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
                     ${playersHtml}
                 </div>
-                <button class="btn-primary" onclick="submitTeamProposal(${data.team_size})">Confirm Team</button>
+                <button class="w-full py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors" onclick="submitTeamProposal(${data.team_size})">Confirm Team</button>
             </div>
-            <div class="info-box">
-                <p><strong>Role Info:</strong> ${data.role_info}</p>
+            <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400 border border-slate-700">
+                <p><strong class="text-slate-300">Role Info:</strong> ${data.role_info}</p>
             </div>
         `;
     } else if (type === 'vote') {
         promptP.textContent = `Vote on the proposed team: ${data.proposed_team.join(', ')} `;
         html = `
-            <div class="action-buttons">
-                <button class="btn-success" onclick="submitAction('APPROVE')">APPROVE</button>
-                <button class="btn-danger" onclick="submitAction('REJECT')">REJECT</button>
+            <div class="flex gap-4">
+                <button class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors" onclick="submitAction('APPROVE')">APPROVE</button>
+                <button class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors" onclick="submitAction('REJECT')">REJECT</button>
             </div>
-            <div class="info-box">
-                <p><strong>Role Info:</strong> ${data.role_info}</p>
+            <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400 border border-slate-700">
+                <p><strong class="text-slate-300">Role Info:</strong> ${data.role_info}</p>
             </div>
         `;
     } else if (type === 'mission_action') {
         promptP.textContent = `Mission Phase: Choose your action.`;
         html = `
-            <div class="action-buttons">
-                <button class="btn-success" onclick="submitAction('SUCCESS')">SUCCESS</button>
-                <button class="btn-danger" onclick="submitAction('FAIL')">FAIL</button>
+            <div class="flex gap-4">
+                <button class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors" onclick="submitAction('SUCCESS')">SUCCESS</button>
+                <button class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors" onclick="submitAction('FAIL')">FAIL</button>
             </div>
-            <div class="info-box">
-                <p><strong>Role Info:</strong> ${data.role_info}</p>
-                <p class="warning-text">Note: Good players MUST choose SUCCESS.</p>
+            <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400 border border-slate-700">
+                <p><strong class="text-slate-300">Role Info:</strong> ${data.role_info}</p>
+                <p class="text-amber-400 mt-1">Note: Good players MUST choose SUCCESS.</p>
             </div>
         `;
     } else if (type === 'assassination') {
         promptP.textContent = `Assassin Phase: Identify Merlin!`;
 
         const playersHtml = data.good_players.map(name => `
-            <label class="radio-label">
-                <input type="radio" name="assassinTarget" value="${name}">
-                ${name}
+            <label class="flex items-center gap-3 p-3 rounded-lg border border-slate-700 bg-slate-800/50 hover:bg-slate-800 cursor-pointer transition-colors">
+                <input type="radio" name="assassinTarget" value="${name}" class="w-4 h-4 text-red-600 border-slate-600 focus:ring-red-500 bg-slate-700">
+                <span class="text-sm font-medium text-slate-200">${name}</span>
             </label>
         `).join('');
 
         html = `
-            <div class="form-group">
-                <div class="radio-group">
+            <div class="space-y-4">
+                <div class="grid grid-cols-2 gap-3">
                     ${playersHtml}
                 </div>
-                <button class="btn-danger" onclick="submitAssassinTarget()">Assassinate</button>
+                <button class="w-full py-2 bg-red-600 hover:bg-red-500 text-white font-medium rounded-lg transition-colors" onclick="submitAssassinTarget()">Assassinate</button>
             </div>
-            <div class="info-box">
-                <p><strong>Role Info:</strong> ${data.role_info}</p>
+            <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400 border border-slate-700">
+                <p><strong class="text-slate-300">Role Info:</strong> ${data.role_info}</p>
             </div>
         `;
     }
@@ -528,4 +544,15 @@ function formatTimestamp(timestamp) {
         hour: '2-digit',
         minute: '2-digit'
     });
+}
+function getStatusClasses(status) {
+    switch (status) {
+        case 'idle': return 'bg-slate-800 text-slate-400 border-slate-700';
+        case 'starting': return 'bg-amber-900/30 text-amber-400 border-amber-500/30 animate-pulse';
+        case 'initializing': return 'bg-amber-900/30 text-amber-400 border-amber-500/30 animate-pulse';
+        case 'running': return 'bg-indigo-900/30 text-indigo-400 border-indigo-500/30 animate-pulse';
+        case 'completed': return 'bg-emerald-900/30 text-emerald-400 border-emerald-500/30';
+        case 'error': return 'bg-red-900/30 text-red-400 border-red-500/30';
+        default: return 'bg-slate-800 text-slate-400 border-slate-700';
+    }
 }
