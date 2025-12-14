@@ -9,6 +9,8 @@ import json
 import subprocess
 from datetime import datetime
 from avalon_ai_game import AvalonGame, GameController, OllamaAI, DeepSeekAPI, LocalModelAI, HumanPlayer
+from arena import Arena
+from arena_config import AgentConfig, ArenaConfigManager
 from supabase_client import supabase
 from threading import Thread, Event, Lock
 import time
@@ -46,6 +48,19 @@ running_game = {
     'input_response': None,
     'current_action': ''
 }
+
+# Global variable to track running arena session
+arena_runner = {
+    'is_running': False,
+    'status': 'idle',
+    'progress': 0,
+    'total_games': 0,
+    'results': [],
+    'current_game_idx': 0,
+    'error': None
+}
+
+arena_config_manager = ArenaConfigManager()
 
 def load_env_api_key():
     """Load API key from .env.local file"""
@@ -210,6 +225,11 @@ def index():
     """Main page - game setup and control"""
     return render_template('index.html')
 
+@app.route('/arena')
+def arena_page():
+    """Arena configuration and runner page"""
+    return render_template('arena.html')
+
 @app.route('/api/start_game', methods=['POST'])
 def start_game():
     """Start a new game with the provided configuration"""
@@ -366,6 +386,122 @@ def check_ollama():
 
     except Exception as e:
         return jsonify({'available': False, 'models': [], 'error': str(e)})
+
+# -----------------------------------------------------------------------------
+# Arena API Endpoints
+# -----------------------------------------------------------------------------
+
+def run_arena_thread(hero_config_data, baseline_config_data, num_games):
+    """Run arena batch in a separate thread."""
+    global arena_runner
+    
+    try:
+        arena_runner['status'] = 'running'
+        arena_runner['progress'] = 0
+        arena_runner['total_games'] = num_games
+        arena_runner['results'] = []
+        arena_runner['error'] = None
+        
+        # Create configs
+        hero_config = AgentConfig.from_dict(hero_config_data)
+        baseline_config = AgentConfig.from_dict(baseline_config_data) if baseline_config_data else None
+        
+        # Initialize Arena
+        arena = Arena(hero_config, baseline_config)
+        
+        print(f"Starting Arena Batch: {num_games} games")
+        
+        for i in range(num_games):
+            if not arena_runner['is_running']:
+                break
+                
+            arena_runner['current_game_idx'] = i + 1
+            print(f"Arena Game {i+1}/{num_games}")
+            
+            result = arena.run_match()
+            arena_runner['results'].append(result)
+            arena_runner['progress'] = i + 1
+            
+            # Optional: Save result to Supabase or local file immediately
+            
+        arena_runner['status'] = 'completed'
+        print("Arena Batch Completed")
+        
+    except Exception as e:
+        arena_runner['status'] = 'error'
+        arena_runner['error'] = str(e)
+        print(f"Arena Error: {e}")
+        
+    finally:
+        arena_runner['is_running'] = False
+
+@app.route('/api/arena/start', methods=['POST'])
+def start_arena():
+    """Start an arena batch."""
+    global arena_runner
+    
+    if arena_runner['is_running']:
+        return jsonify({'error': 'Arena is already running'}), 400
+        
+    data = request.json
+    hero_config = data.get('hero_config')
+    baseline_config = data.get('baseline_config')
+    num_games = data.get('num_games', 10)
+    
+    if not hero_config:
+        return jsonify({'error': 'Hero config is required'}), 400
+        
+    arena_runner['is_running'] = True
+    
+    thread = Thread(target=run_arena_thread, args=(hero_config, baseline_config, num_games))
+    thread.daemon = True
+    thread.start()
+    
+    return jsonify({'message': 'Arena started', 'status': 'starting'})
+
+@app.route('/api/arena/status')
+def arena_status():
+    """Get arena status."""
+    return jsonify(arena_runner)
+
+@app.route('/api/arena/stop', methods=['POST'])
+def stop_arena():
+    """Stop the arena."""
+    global arena_runner
+    arena_runner['is_running'] = False
+    return jsonify({'message': 'Stopping arena...'})
+
+@app.route('/api/arena/configs', methods=['GET'])
+def list_arena_configs():
+    """List saved agent configs."""
+    configs = arena_config_manager.list_configs()
+    return jsonify({'configs': configs})
+
+@app.route('/api/arena/configs', methods=['POST'])
+def save_arena_config():
+    """Save an agent config."""
+    data = request.json
+    try:
+        config = AgentConfig.from_dict(data)
+        config_id = arena_config_manager.save_config(config)
+        return jsonify({'id': config_id, 'message': 'Config saved'})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+@app.route('/api/arena/configs/<config_id>', methods=['GET'])
+def get_arena_config(config_id):
+    """Get a specific agent config."""
+    config = arena_config_manager.load_config(config_id)
+    if config:
+        return jsonify(config.to_dict())
+    return jsonify({'error': 'Config not found'}), 404
+
+@app.route('/api/arena/configs/<config_id>', methods=['DELETE'])
+def delete_arena_config(config_id):
+    """Delete an agent config."""
+    if arena_config_manager.delete_config(config_id):
+        return jsonify({'message': 'Config deleted'})
+    return jsonify({'error': 'Config not found'}), 404
 
 def find_free_port(start_port=5000, max_port=5010):
     """Find a free port to use"""

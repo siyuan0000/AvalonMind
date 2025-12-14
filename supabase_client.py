@@ -168,5 +168,70 @@ class SupabaseClient:
             print(f"[Supabase] Failed to get user usage: {e}")
             return 0
 
+    def save_arena_match(self, match_data):
+        """Save arena match result."""
+        if not self.client:
+            return False
+        
+        try:
+            self.client.table('arena_matches').insert(match_data).execute()
+            print(f"[Supabase] Arena match saved.")
+            return True
+        except Exception as e:
+            print(f"[Supabase] Failed to save arena match: {e}")
+            return False
+
+    def get_arena_leaderboard(self):
+        """Get arena leaderboard stats."""
+        if not self.client:
+            return []
+        
+        try:
+            # This requires a view or RPC in Supabase for aggregation, 
+            # or we fetch raw data and aggregate in Python (less efficient but works for small scale)
+            # For now, let's fetch raw matches and aggregate here.
+            response = self.client.table('arena_matches').select('*').execute()
+            matches = response.data
+            
+            stats = {}
+            for m in matches:
+                name = m.get('hero_name')
+                if not name: continue
+                
+                if name not in stats:
+                    stats[name] = {'played': 0, 'won': 0, 'roles': {}}
+                
+                stats[name]['played'] += 1
+                if m.get('hero_won'):
+                    stats[name]['won'] += 1
+                    
+                role = m.get('hero_role')
+                if role:
+                    if role not in stats[name]['roles']:
+                        stats[name]['roles'][role] = {'played': 0, 'won': 0}
+                    stats[name]['roles'][role]['played'] += 1
+                    if m.get('hero_won'):
+                        stats[name]['roles'][role]['won'] += 1
+            
+            # Convert to list
+            leaderboard = []
+            for name, data in stats.items():
+                win_rate = (data['won'] / data['played']) * 100 if data['played'] > 0 else 0
+                leaderboard.append({
+                    'name': name,
+                    'played': data['played'],
+                    'won': data['won'],
+                    'win_rate': round(win_rate, 1),
+                    'roles': data['roles']
+                })
+            
+            # Sort by win rate desc
+            leaderboard.sort(key=lambda x: x['win_rate'], reverse=True)
+            return leaderboard
+            
+        except Exception as e:
+            print(f"[Supabase] Failed to get leaderboard: {e}")
+            return []
+
 # Global instance
 supabase = SupabaseClient()

@@ -316,6 +316,22 @@ class GameController:
         self.logger = GameLogger()
         self.logger.log_players(self.game.players, self.player_ais)
 
+        # Default prompts (can be overridden per player)
+        self.player_prompts = {}
+
+    def set_player_prompts(self, player_prompts):
+        """Set custom prompts for players.
+        
+        Args:
+            player_prompts: Dict mapping player name to AvalonPrompts instance
+        """
+        self.player_prompts = player_prompts
+
+    def get_player_prompts(self, player):
+        """Get prompts for a specific player."""
+        from prompts import _default_prompts
+        return self.player_prompts.get(player.name, _default_prompts)
+
     def set_input_handler(self, handler):
         """Set callback for handling human input."""
         self.input_handler = handler
@@ -366,7 +382,8 @@ class GameController:
         team_names = [p.name for p in proposed_team]
         game_history = self.logger.get_game_history_summary()
 
-        prompt = AvalonPrompts.discussion(
+        prompts = self.get_player_prompts(player)
+        prompt = prompts.discussion(
             role_info=role_info,
             game_state=game_state,
             leader_name=leader.name,
@@ -411,7 +428,8 @@ class GameController:
         initial_team_names = [p.name for p in initial_team]
         game_history = self.logger.get_game_history_summary()
 
-        prompt = AvalonPrompts.leader_final_decision(
+        prompts = self.get_player_prompts(leader)
+        prompt = prompts.leader_final_decision(
             role_info=role_info,
             game_state=game_state,
             player_names=player_names,
@@ -462,7 +480,8 @@ class GameController:
         game_state = self.game.get_game_state()
         game_history = self.logger.get_game_history_summary()
 
-        prompt = AvalonPrompts.team_proposal(
+        prompts = self.get_player_prompts(leader)
+        prompt = prompts.team_proposal(
             role_info=role_info,
             game_state=game_state,
             player_names=player_names,
@@ -512,7 +531,8 @@ class GameController:
         team_names = [p.name for p in proposed_team]
         game_history = self.logger.get_game_history_summary()
 
-        prompt = AvalonPrompts.vote(
+        prompts = self.get_player_prompts(player)
+        prompt = prompts.vote(
             role_info=role_info,
             game_state=game_state,
             proposed_team=team_names,
@@ -548,7 +568,8 @@ class GameController:
         game_state = self.game.get_game_state()
         game_history = self.logger.get_game_history_summary()
 
-        prompt = AvalonPrompts.mission_action(
+        prompts = self.get_player_prompts(player)
+        prompt = prompts.mission_action(
             role_info=role_info,
             game_state=game_state,
             game_history=game_history
@@ -589,7 +610,8 @@ class GameController:
         role_info = self.game.get_role_visibility(assassin)
         game_history = self.logger.get_game_history_summary()
 
-        prompt = AvalonPrompts.assassination(
+        prompts = self.get_player_prompts(assassin)
+        prompt = prompts.assassination(
             role_info=role_info,
             good_players=player_names,
             game_history=game_history

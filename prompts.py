@@ -4,14 +4,34 @@ All prompts used for AI decision-making in the game.
 Enhanced with strategic reasoning, behavioral memory, and game history analysis.
 """
 
-
 class AvalonPrompts:
     """Collection of prompts for different game phases."""
 
-    @staticmethod
-    def team_proposal(role_info, game_state, player_names, team_size, game_history=""):
+    def __init__(self, templates=None):
+        """
+        Initialize with optional custom templates.
+        
+        Args:
+            templates (dict): Dictionary of format strings for each prompt type.
+                              Keys: 'team_proposal', 'discussion', 'leader_final_decision',
+                                    'vote', 'mission_action', 'assassination'
+        """
+        self.templates = templates or {}
+
+    def team_proposal(self, role_info, game_state, player_names, team_size, game_history=""):
         """Prompt for leader to propose initial team."""
         timeline_section = f"\nSHARED MEMORY TIMELINE (public record of statements, votes, and missions):\n{game_history}\n" if game_history else ""
+
+        template = self.templates.get('team_proposal')
+        if template:
+            return template.format(
+                role_info=role_info,
+                game_state=game_state,
+                player_names=player_names,
+                team_size=team_size,
+                timeline_section=timeline_section,
+                game_history=game_history
+            )
 
         return f"""You are playing Avalon. {role_info}
 
@@ -73,13 +93,25 @@ Example format: Alice,Bob,Charlie
 
 Your selection:"""
 
-    @staticmethod
-    def discussion(role_info, game_state, leader_name, proposed_team, discussion_history, game_history=""):
+    def discussion(self, role_info, game_state, leader_name, proposed_team, discussion_history, game_history=""):
         """Prompt for player to discuss proposed team."""
         # Format discussion history
         history_text = "\n".join([f"  {name}: {comment}" for name, comment in discussion_history]) if discussion_history else "  (No previous comments)"
 
         timeline_section = f"\nSHARED MEMORY TIMELINE (public record of statements, votes, and missions):\n{game_history}\n" if game_history else ""
+
+        template = self.templates.get('discussion')
+        if template:
+            return template.format(
+                role_info=role_info,
+                game_state=game_state,
+                leader_name=leader_name,
+                proposed_team=proposed_team,
+                history_text=history_text,
+                timeline_section=timeline_section,
+                game_history=game_history,
+                discussion_history=discussion_history
+            )
 
         return f"""You are playing Avalon. {role_info}
 
@@ -151,13 +183,26 @@ IMPORTANT RULES:
 
 Your comment:"""
 
-    @staticmethod
-    def leader_final_decision(role_info, game_state, player_names, initial_team, team_size, discussion_history, game_history=""):
+    def leader_final_decision(self, role_info, game_state, player_names, initial_team, team_size, discussion_history, game_history=""):
         """Prompt for leader to make final team decision after discussion."""
         # Format discussion history
         history_text = "\n".join([f"  {name}: {comment}" for name, comment in discussion_history])
 
         timeline_section = f"\nSHARED MEMORY TIMELINE (public record of statements, votes, and missions):\n{game_history}\n" if game_history else ""
+
+        template = self.templates.get('leader_final_decision')
+        if template:
+            return template.format(
+                role_info=role_info,
+                game_state=game_state,
+                player_names=player_names,
+                initial_team=initial_team,
+                team_size=team_size,
+                history_text=history_text,
+                timeline_section=timeline_section,
+                game_history=game_history,
+                discussion_history=discussion_history
+            )
 
         return f"""You are playing Avalon. {role_info}
 
@@ -236,10 +281,19 @@ Example format: Alice,Bob,Charlie
 
 Your final team:"""
 
-    @staticmethod
-    def vote(role_info, game_state, proposed_team, game_history=""):
+    def vote(self, role_info, game_state, proposed_team, game_history=""):
         """Prompt for player to vote on proposed team."""
         timeline_section = f"\nSHARED MEMORY TIMELINE (public record of statements, votes, and missions):\n{game_history}\n" if game_history else ""
+
+        template = self.templates.get('vote')
+        if template:
+            return template.format(
+                role_info=role_info,
+                game_state=game_state,
+                proposed_team=proposed_team,
+                timeline_section=timeline_section,
+                game_history=game_history
+            )
 
         return f"""You are playing Avalon. {role_info}
 
@@ -338,10 +392,18 @@ IMPORTANT: After your analysis, output ONLY one word: either "APPROVE" or "REJEC
 
 Your vote:"""
 
-    @staticmethod
-    def mission_action(role_info, game_state, game_history=""):
+    def mission_action(self, role_info, game_state, game_history=""):
         """Prompt for player to choose mission action."""
         timeline_section = f"\nSHARED MEMORY TIMELINE (public record of statements, votes, and missions):\n{game_history}\n" if game_history else ""
+
+        template = self.templates.get('mission_action')
+        if template:
+            return template.format(
+                role_info=role_info,
+                game_state=game_state,
+                timeline_section=timeline_section,
+                game_history=game_history
+            )
 
         return f"""You are playing Avalon. {role_info}
 
@@ -454,10 +516,18 @@ IMPORTANT: After your analysis, output ONLY one word: either "SUCCESS" or "FAIL"
 
 Your action:"""
 
-    @staticmethod
-    def assassination(role_info, good_players, game_history=""):
+    def assassination(self, role_info, good_players, game_history=""):
         """Prompt for Assassin to choose assassination target."""
         timeline_section = f"\nSHARED MEMORY TIMELINE (public record of statements, votes, and missions):\n{game_history}\n" if game_history else ""
+
+        template = self.templates.get('assassination')
+        if template:
+            return template.format(
+                role_info=role_info,
+                good_players=good_players,
+                timeline_section=timeline_section,
+                game_history=game_history
+            )
 
         return f"""You are playing Avalon. {role_info}
 
@@ -607,32 +677,35 @@ IMPORTANT: After your analysis, output ONLY the name of one player, nothing else
 Your assassination target:"""
 
 
+# Global default instance for backward compatibility
+_default_prompts = AvalonPrompts()
+
 # Convenience functions for backward compatibility
 def get_team_proposal_prompt(role_info, game_state, player_names, team_size, game_history=""):
     """Get team proposal prompt."""
-    return AvalonPrompts.team_proposal(role_info, game_state, player_names, team_size, game_history)
+    return _default_prompts.team_proposal(role_info, game_state, player_names, team_size, game_history)
 
 
 def get_discussion_prompt(role_info, game_state, leader_name, proposed_team, discussion_history, game_history=""):
     """Get discussion prompt."""
-    return AvalonPrompts.discussion(role_info, game_state, leader_name, proposed_team, discussion_history, game_history)
+    return _default_prompts.discussion(role_info, game_state, leader_name, proposed_team, discussion_history, game_history)
 
 
 def get_leader_final_decision_prompt(role_info, game_state, player_names, initial_team, team_size, discussion_history, game_history=""):
     """Get leader final decision prompt."""
-    return AvalonPrompts.leader_final_decision(role_info, game_state, player_names, initial_team, team_size, discussion_history, game_history)
+    return _default_prompts.leader_final_decision(role_info, game_state, player_names, initial_team, team_size, discussion_history, game_history)
 
 
 def get_vote_prompt(role_info, game_state, proposed_team, game_history=""):
     """Get vote prompt."""
-    return AvalonPrompts.vote(role_info, game_state, proposed_team, game_history)
+    return _default_prompts.vote(role_info, game_state, proposed_team, game_history)
 
 
 def get_mission_action_prompt(role_info, game_state, game_history=""):
     """Get mission action prompt."""
-    return AvalonPrompts.mission_action(role_info, game_state, game_history)
+    return _default_prompts.mission_action(role_info, game_state, game_history)
 
 
 def get_assassination_prompt(role_info, good_players, game_history=""):
     """Get assassination prompt."""
-    return AvalonPrompts.assassination(role_info, good_players, game_history)
+    return _default_prompts.assassination(role_info, good_players, game_history)
