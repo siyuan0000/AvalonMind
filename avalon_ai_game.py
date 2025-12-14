@@ -319,6 +319,14 @@ class GameController:
         # Default prompts (can be overridden per player)
         self.player_prompts = {}
 
+        # Stop flag
+        self.stop_requested = False
+
+    def stop(self):
+        """Request to stop the game."""
+        self.stop_requested = True
+        self.log_action("Game stop requested...")
+
     def set_player_prompts(self, player_prompts):
         """Set custom prompts for players.
         
@@ -660,6 +668,9 @@ class GameController:
         self.game.rejection_count = 0
 
         while self.game.rejection_count < 5:
+            if self.stop_requested:
+                return
+
             leader = self.game.get_current_leader()
             print(f"\nLeader: {leader.name}")
             print(f"Vote attempt: {self.game.rejection_count + 1}/5")
@@ -845,6 +856,10 @@ class GameController:
         """Run the complete game."""
         # Run 5 rounds or until win condition
         for round_num in range(5):
+            if self.stop_requested:
+                print("Game stopped by user.")
+                return
+
             self.run_mission_round(round_num)
 
             good_wins = sum(1 for r in self.game.mission_results if r)

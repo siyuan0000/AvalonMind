@@ -151,6 +151,36 @@ async function startGame() {
     }
 }
 
+async function stopGame() {
+    const stopButton = document.getElementById('stopButton');
+    const statusMessage = document.getElementById('statusMessage');
+
+    if (!confirm('Are you sure you want to stop the current game?')) {
+        return;
+    }
+
+    stopButton.disabled = true;
+    statusMessage.textContent = 'Stopping game...';
+
+    try {
+        const response = await fetch('/api/stop_game', {
+            method: 'POST',
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            statusMessage.textContent = 'Game stopped';
+        } else {
+            statusMessage.textContent = 'Error: ' + data.error;
+            stopButton.disabled = false;
+        }
+    } catch (error) {
+        statusMessage.textContent = 'Failed to stop game';
+        stopButton.disabled = false;
+        console.error('Stop game error:', error);
+    }
+}
+
 // Start polling for game status
 function startStatusPolling() {
     if (statusInterval) {
@@ -300,11 +330,15 @@ async function updateGameStatus() {
                 eventSource.close();
                 eventSource = null;
             }
+            document.getElementById('stopButton').classList.add('hidden');
+            document.getElementById('stopButton').disabled = false;
         } else if (status.status === 'starting' || status.status === 'initializing') {
             statusMessage.textContent = 'Game is starting...';
             document.getElementById('interactionCard').style.display = 'none';
+            document.getElementById('stopButton').classList.remove('hidden');
         } else if (status.status === 'running') {
             statusMessage.textContent = 'Game is running...';
+            document.getElementById('stopButton').classList.remove('hidden');
 
             // Check for pending input
             if (status.pending_input) {
@@ -327,6 +361,7 @@ async function updateGameStatus() {
                 eventSource = null;
             }
             loadRecentGames(); // Refresh game list
+            document.getElementById('stopButton').classList.add('hidden');
         } else if (status.status === 'error') {
             statusMessage.textContent = 'Error: ' + (status.error || 'Unknown error');
             startButton.disabled = false;
@@ -340,6 +375,7 @@ async function updateGameStatus() {
                 eventSource.close();
                 eventSource = null;
             }
+            document.getElementById('stopButton').classList.add('hidden');
         }
 
     } catch (error) {

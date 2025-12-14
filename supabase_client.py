@@ -23,13 +23,25 @@ class SupabaseClient:
         if not self.url or not self.key:
             env_path = Path(__file__).parent / '.env.local'
             if env_path.exists():
+                print(f"[Supabase] Loading config from {env_path}")
                 try:
                     with open(env_path, 'r') as f:
                         for line in f:
-                            if line.strip().startswith('SUPABASE_URL='):
-                                self.url = line.strip().split('=', 1)[1].strip().strip('"\'')
-                            elif line.strip().startswith('SUPABASE_KEY='):
-                                self.key = line.strip().split('=', 1)[1].strip().strip('"\'')
+                            line = line.strip()
+                            if not line or line.startswith('#'):
+                                continue
+                            if line.startswith('export '):
+                                line = line[7:].strip()
+                            
+                            if '=' in line:
+                                key, value = line.split('=', 1)
+                                key = key.strip()
+                                value = value.strip().strip('"\'')
+                                
+                                if key == 'SUPABASE_URL':
+                                    self.url = value
+                                elif key == 'SUPABASE_KEY':
+                                    self.key = value
                 except Exception as e:
                     print(f"[Supabase] Error loading .env.local: {e}")
 

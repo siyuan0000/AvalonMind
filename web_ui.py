@@ -60,6 +60,9 @@ arena_runner = {
     'error': None
 }
 
+# Track current game controller instance
+current_controller = None
+
 arena_config_manager = ArenaConfigManager()
 
 def load_env_api_key():
@@ -190,6 +193,9 @@ def run_game_thread(config, user_id=None):
         running_game['status'] = 'running'
         controller = GameController(game, player_ais)
         
+        global current_controller
+        current_controller = controller
+        
         # Set input handler for human players
         controller.set_input_handler(handle_human_input)
         
@@ -259,6 +265,20 @@ def start_game():
     thread.start()
 
     return jsonify({'message': 'Game started', 'status': 'starting'})
+
+@app.route('/api/stop_game', methods=['POST'])
+def stop_game():
+    """Stop the current game"""
+    global running_game, current_controller
+
+    if not running_game['is_running']:
+        return jsonify({'error': 'No game running'}), 400
+
+    if current_controller:
+        current_controller.stop()
+        
+    running_game['status'] = 'stopping'
+    return jsonify({'message': 'Game stopping...', 'status': 'stopping'})
 
 @app.route('/api/game_status')
 def game_status():

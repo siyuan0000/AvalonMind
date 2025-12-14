@@ -189,10 +189,19 @@
                             </div>
                         </div>
 
-                        <button id="startButton" onclick="startGame()"
-                            class="w-full py-3 px-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-bold rounded-lg shadow-lg shadow-indigo-500/25 transition-all transform hover:-translate-y-0.5">
-                            Start New Game
-                        </button>
+                        <div class="flex gap-4">
+                            <button id="startButton"
+                                class="flex-1 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-900/20 transition-all transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
+                                onclick="startGame()">
+                                Start New Game
+                            </button>
+                            <button id="stopButton"
+                                class="hidden px-6 py-4 bg-red-600 hover:bg-red-500 text-white font-bold rounded-xl shadow-lg shadow-red-900/20 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+                                onclick="stopGame()">
+                                Stop Game
+                            </button>
+                        </div>
+                        <p id="statusMessage" class="text-center text-slate-400 text-sm mt-4 h-5"></p>
                     </div>
                 </div>
 
