@@ -16,35 +16,10 @@ class SupabaseClient:
         if self._initialized:
             return
         
-        self.url = os.environ.get("SUPABASE_URL")
-        self.key = os.environ.get("SUPABASE_KEY")
+        from config import config
+        self.url = config.get_supabase_url()
+        self.key = config.get_supabase_key()
         
-        # Try loading from .env.local if not in env
-        if not self.url or not self.key:
-            env_path = Path(__file__).parent / '.env.local'
-            if env_path.exists():
-                print(f"[Supabase] Loading config from {env_path}")
-                try:
-                    with open(env_path, 'r') as f:
-                        for line in f:
-                            line = line.strip()
-                            if not line or line.startswith('#'):
-                                continue
-                            if line.startswith('export '):
-                                line = line[7:].strip()
-                            
-                            if '=' in line:
-                                key, value = line.split('=', 1)
-                                key = key.strip()
-                                value = value.strip().strip('"\'')
-                                
-                                if key == 'SUPABASE_URL':
-                                    self.url = value
-                                elif key == 'SUPABASE_KEY':
-                                    self.key = value
-                except Exception as e:
-                    print(f"[Supabase] Error loading .env.local: {e}")
-
         if self.url and self.key:
             try:
                 self.client: Client = create_client(self.url, self.key)

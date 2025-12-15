@@ -1,305 +1,24 @@
 import random
-import subprocess
-import json
-import re
-import os
-from typing import Optional
-from pathlib import Path
-from datetime import datetime
-from prompts import AvalonPrompts
+from typing import List, Dict, Optional, Any, Callable
 from game_logger import GameLogger
-
-class Player:
-    """Represents a player in the Avalon game."""
-
-    def __init__(self, name, role):
-        self.name = name
-        self.role = role
-        self.is_evil = role in ['Morgana', 'Assassin']
-
-    def __repr__(self):
-        return f"{self.name} ({self.role})"
-
-
-class AvalonGame:
-    """Main game engine for 6-player Avalon."""
-
-    # Mission configuration for 6 players
-    MISSION_SIZES = [2, 3, 4, 3, 4]
-
-    def __init__(self, player_names):
-        """
-        Initialize game with 6 players.
-
-        Game order rules:
-        - Player list order: Fixed (e.g., Alice, Bob, Charlie, Diana, Eve, Frank)
-        - Discussion order: Clockwise through player list (forward: 0→1→2→3→4→5)
-        - Leader rotation: Clockwise (same direction as player order)
-        """
-        self.players = self.assign_roles(player_names)
-        self.leader_index = random.randint(0, 5)
-        self.mission_results = []  # True = Success, False = Fail
-        self.rejection_count = 0
-        self.current_round = 0
-
-        # Display initial game state
-        print("\n" + "="*60)
-        print("AVALON - 6 PLAYER GAME")
-        print("="*60)
-        print("\nRole Assignment:")
-        for p in self.players:
-            print(f"  {p.name}: {p.role} ({'Evil' if p.is_evil else 'Good'})")
-        print("\n" + "="*60)
-
-    def assign_roles(self, player_names):
-        """Assign roles according to 6-player setup."""
-        roles = ['Merlin', 'Percival', 'Loyal Servant', 'Loyal Servant', 'Morgana', 'Assassin']
-        random.shuffle(roles)
-        return [Player(name, role) for name, role in zip(player_names, roles)]
-
-    def get_role_visibility(self, player):
-        """Get what information a player can see based on their role."""
-        info = [f"You are {player.name}."]
-
-        if player.role == 'Merlin':
-            # Merlin sees all Evil players
-            evil_players = [p.name for p in self.players if p.is_evil]
-            info.append(f"You are Merlin. You see the following Evil players: {evil_players}")
-
-        elif player.role == 'Percival':
-            # Percival sees Merlin and Morgana (cannot distinguish)
-            merlin_morgana = [p.name for p in self.players if p.role in ['Merlin', 'Morgana']]
-            info.append(f"You are Percival. You see these as possible Merlins: {merlin_morgana}")
-
-        elif player.role in ['Loyal Servant']:
-            info.append(f"You are a Loyal Servant of Arthur. You have no special information.")
-
-        elif player.is_evil:
-            # Evil players see each other
-            evil_team = [p.name for p in self.players if p.is_evil and p.name != player.name]
-            info.append(f"You are {player.role} (Evil). Your evil teammates are: {evil_team}")
-
-        return " ".join(info)
-
-    def get_current_leader(self):
-        """Get the current leader."""
-        return self.players[self.leader_index]
-
-    def rotate_leader(self):
-        """Rotate leadership to next player clockwise (increasing indices)."""
-        self.leader_index = (self.leader_index + 1) % len(self.players)
-
-    def get_game_state(self):
-        """Get current game state summary."""
-        good_wins = sum(1 for r in self.mission_results if r)
-        evil_wins = sum(1 for r in self.mission_results if not r)
-        return f"Mission Status: {good_wins} Success, {evil_wins} Fail | Rejections this round: {self.rejection_count}/5"
-
-
-class BaseAI:
-    """Base class for AI backends."""
-
-    def call_model(self, prompt, max_retries=3):
-        """Call the AI model. Must be implemented by subclasses."""
-        raise NotImplementedError
-
-    def extract_choice(self, response, valid_choices):
-        """Extract a valid choice from AI response."""
-        if not response:
-            return None
-
-        # Look for exact matches (case insensitive)
-        response_lower = response.lower()
-        for choice in valid_choices:
-            if choice.lower() in response_lower:
-                return choice
-
-        # Try to find in brackets or quotes
-        for pattern in [r'\[([^\]]+)\]', r'"([^"]+)"', r"'([^']+)'"]:
-            matches = re.findall(pattern, response)
-            for match in matches:
-                if match in valid_choices:
-                    return match
-
-        return None
-
+from ai_backends import BaseAI
+from game_engine import AvalonGame, Player
 
 class HumanPlayer(BaseAI):
     """Interface for a human player via Web UI."""
 
-    def __init__(self, name):
+    def __init__(self, name: str):
         self.name = name
 
-    def call_model(self, prompt, max_retries=3):
+    def call_model(self, prompt: str, max_retries: int = 3) -> str:
         """Should not be called directly for human players."""
         raise NotImplementedError("Human player input should be handled via input_handler")
-
-
-class OllamaAI(BaseAI):
-    """Interface to call models via Ollama."""
-
-    def __init__(self, model_name='deepseek-r1'):
-        self.model_name = model_name
-
-    def call_model(self, prompt, max_retries=3):
-        """Call Ollama model."""
-        for attempt in range(max_retries):
-            try:
-                result = subprocess.run(
-                    ['ollama', 'run', self.model_name, prompt],
-                    capture_output=True,
-                    text=True,
-                    timeout=60
-                )
-
-                response = result.stdout.strip()
-
-                if not response:
-                    print(f"  [Attempt {attempt + 1}] Empty response, retrying...")
-                    continue
-
-                return response
-
-            except subprocess.TimeoutExpired:
-                print(f"  [Attempt {attempt + 1}] Timeout, retrying...")
-                continue
-            except Exception as e:
-                print(f"  [Attempt {attempt + 1}] Error: {e}")
-                continue
-
-        return None
-
-
-class DeepSeekAPI(BaseAI):
-    """Interface to call DeepSeek via API."""
-
-    def __init__(self, api_key=None, model='deepseek-chat'):
-        # Try to load API key from: 1) parameter, 2) .env.local file, 3) environment variable
-        if api_key:
-            self.api_key = api_key
-        else:
-            self.api_key = self._load_api_key_from_env_file() or os.getenv('DEEPSEEK_API_KEY')
-
-        self.model = model
-        self.base_url = 'https://api.deepseek.com/v1/chat/completions'
-        self.token_usage = 0
-
-    def _load_api_key_from_env_file(self):
-        """Load API key from .env.local file."""
-        env_file = Path(__file__).parent / '.env.local'
-        if env_file.exists():
-            try:
-                with open(env_file, 'r') as f:
-                    for line in f:
-                        line = line.strip()
-                        if line.startswith('DEEPSEEK_API_KEY='):
-                            # Remove DEEPSEEK_API_KEY= prefix and any quotes
-                            key = line.split('=', 1)[1].strip()
-                            # Remove surrounding quotes if present
-                            if (key.startswith('"') and key.endswith('"')) or \
-                               (key.startswith("'") and key.endswith("'")):
-                                key = key[1:-1]
-                            return key
-            except Exception as e:
-                print(f"  [Warning] Could not read .env.local: {e}")
-        return None
-
-    def call_model(self, prompt, max_retries=3):
-        """Call DeepSeek API."""
-        if not self.api_key:
-            print("  [Error] DeepSeek API key not found")
-            return None
-
-        headers = {
-            'Content-Type': 'application/json',
-            'Authorization': f'Bearer {self.api_key}'
-        }
-
-        data = {
-            'model': self.model,
-            'messages': [
-                {'role': 'user', 'content': prompt}
-            ],
-            'temperature': 0.7
-        }
-
-        for attempt in range(max_retries):
-            try:
-                import urllib.request
-                req = urllib.request.Request(
-                    self.base_url,
-                    data=json.dumps(data).encode('utf-8'),
-                    headers=headers
-                )
-
-                with urllib.request.urlopen(req, timeout=30) as response:
-                    result = json.loads(response.read().decode('utf-8'))
-                    if 'usage' in result:
-                        self.token_usage += result['usage'].get('total_tokens', 0)
-                    return result['choices'][0]['message']['content'].strip()
-
-            except Exception as e:
-                print(f"  [Attempt {attempt + 1}] API Error: {e}")
-                continue
-
-        return None
-
-
-class LocalModelAI(BaseAI):
-    """Interface for local models (placeholder for transformers/vllm)."""
-
-    def __init__(self, model_path, backend='transformers'):
-        self.model_path = model_path
-        self.backend = backend
-        self.model = None
-        self.tokenizer = None
-        self._load_model()
-
-    def _load_model(self):
-        """Load the local model."""
-        if self.backend == 'transformers':
-            try:
-                from transformers import AutoModelForCausalLM, AutoTokenizer
-                print(f"Loading model from {self.model_path}...")
-                self.tokenizer = AutoTokenizer.from_pretrained(self.model_path)
-                self.model = AutoModelForCausalLM.from_pretrained(
-                    self.model_path,
-                    device_map='auto',
-                    trust_remote_code=True
-                )
-                print("Model loaded successfully!")
-            except ImportError:
-                print("  [Error] transformers not installed. Install with: pip install transformers torch")
-            except Exception as e:
-                print(f"  [Error] Failed to load model: {e}")
-        else:
-            print(f"  [Error] Backend '{self.backend}' not supported")
-
-    def call_model(self, prompt, max_retries=3):
-        """Call local model."""
-        if not self.model or not self.tokenizer:
-            return None
-
-        try:
-            inputs = self.tokenizer(prompt, return_tensors='pt').to(self.model.device)
-            outputs = self.model.generate(
-                **inputs,
-                max_new_tokens=100,
-                temperature=0.7,
-                do_sample=True,
-                pad_token_id=self.tokenizer.eos_token_id
-            )
-            response = self.tokenizer.decode(outputs[0][inputs['input_ids'].shape[1]:], skip_special_tokens=True)
-            return response.strip()
-        except Exception as e:
-            print(f"  [Error] Generation failed: {e}")
-            return None
 
 
 class GameController:
     """Controls the game flow with AI players."""
 
-    def __init__(self, game, player_ai_configs):
+    def __init__(self, game: AvalonGame, player_ai_configs: List[BaseAI]):
         """
         Initialize game controller with per-player AI configurations.
 
@@ -309,8 +28,9 @@ class GameController:
         """
         self.game = game
         self.player_ais = player_ai_configs
-        self.input_handler = None  # Callback for human input
-        self.log_handler = None    # Callback for status updates
+        self.input_handler: Optional[Callable] = None
+        self.log_handler: Optional[Callable] = None
+        self.event_handler: Optional[Callable] = None
 
         # Initialize game logger
         self.logger = GameLogger()
@@ -902,33 +622,3 @@ class GameController:
         for p in self.game.players:
             print(f"  {p.name}: {p.role} ({'Evil' if p.is_evil else 'Good'})")
         print(f"\n{'='*60}")
-
-
-def main():
-    """Main entry point."""
-    print("Starting Avalon 6-Player AI Game...")
-    print("Using DeepSeek-R1 via Ollama for all players\n")
-
-    # Check if ollama is available
-    try:
-        subprocess.run(['ollama', 'list'], capture_output=True, check=True)
-    except Exception as e:
-        print(f"ERROR: Ollama not found. Please install Ollama and run 'ollama pull deepseek-r1'")
-        return
-
-    # Create game with 6 players
-    player_names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank']
-    game = AvalonGame(player_names)
-
-    # Run game with AI controller
-    from avalon_ai_game import OllamaAI
-
-    # lightweight 1B model for smooth gameplay
-    player_ais = [OllamaAI(model_name="Llama-3.2-1B-Instruct-Q6_K") for _ in range(6)]
-
-    controller = GameController(game, player_ais)
-    controller.run_game()
-
-
-if __name__ == "__main__":
-    main()

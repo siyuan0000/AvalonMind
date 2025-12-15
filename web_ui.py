@@ -7,14 +7,17 @@ from flask import Flask, render_template, request, jsonify, send_file, Response
 import os
 import json
 import subprocess
-from datetime import datetime
-from avalon_ai_game import AvalonGame, GameController, OllamaAI, DeepSeekAPI, LocalModelAI, HumanPlayer
+from threading import Thread, Event, Lock
+from queue import Queue
+
+# Core Modules
+from game_engine import AvalonGame
+from game_controller import GameController, HumanPlayer
+from ai_backends import DeepSeekAPI
+from config import config
 from arena import Arena
 from arena_config import AgentConfig, ArenaConfigManager
 from supabase_client import supabase
-from threading import Thread, Event, Lock
-import time
-from queue import Queue
 
 app = Flask(__name__)
 
@@ -64,21 +67,6 @@ arena_runner = {
 current_controller = None
 
 arena_config_manager = ArenaConfigManager()
-
-def load_env_api_key():
-    """Load API key from .env.local file"""
-    env_path = os.path.join(os.path.dirname(__file__), '.env.local')
-    if os.path.exists(env_path):
-        with open(env_path, 'r') as f:
-            for line in f:
-                if line.strip().startswith('DEEPSEEK_API_KEY='):
-                    key = line.strip().split('=', 1)[1].strip()
-                    # Remove quotes if present
-                    if (key.startswith('"') and key.endswith('"')) or \
-                       (key.startswith("'") and key.endswith("'")):
-                        key = key[1:-1]
-                    return key
-    return os.environ.get('DEEPSEEK_API_KEY')
 
 def handle_log_action(message):
     """Callback to handle game log updates."""
@@ -170,7 +158,7 @@ def run_game_thread(config, user_id=None):
         player_ais = []
         
         # Fixed DeepSeek API Key (from config or env)
-        api_key = config.get('api_key') or load_env_api_key()
+        api_key = config.get_deepseek_api_key()
         print(f"Loaded API Key: {'*' * 5 + api_key[-4:] if api_key else 'None'}")
         
         if not api_key:

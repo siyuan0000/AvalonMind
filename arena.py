@@ -1,7 +1,9 @@
 import random
 import time
 from typing import List, Dict, Optional
-from avalon_ai_game import AvalonGame, GameController, OllamaAI, DeepSeekAPI, LocalModelAI
+from game_engine import AvalonGame
+from game_controller import GameController
+from ai_backends import OllamaAI, DeepSeekAPI, LocalModelAI
 from prompts import AvalonPrompts
 from arena_config import AgentConfig
 
