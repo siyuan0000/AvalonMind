@@ -29,4 +29,4 @@ RUN mkdir -p logs
 EXPOSE 5000
 
 # Run gunicorn
-CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "8", "--timeout", "120", "web_ui:app"]
+CMD ["gunicorn", "--bind", "0.0.0.0:5000", "--workers", "1", "--threads", "8", "--timeout", "120", "avalon.web.app:app"]
