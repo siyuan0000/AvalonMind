@@ -16,7 +16,7 @@ class Config:
         self.DEEPSEEK_API_KEY = os.environ.get("DEEPSEEK_API_KEY")
         
         # Try loading from .env.local if not in env
-        env_path = Path(__file__).parent / '.env.local'
+        env_path = Path(__file__).parent.parent / '.env.local'
         if env_path.exists():
             print(f"[Config] Loading from {env_path}")
             try:

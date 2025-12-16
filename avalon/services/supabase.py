@@ -16,7 +16,7 @@ class SupabaseClient:
         if self._initialized:
             return
         
-        from config import config
+        from avalon.config import config
         self.url = config.get_supabase_url()
         self.key = config.get_supabase_key()
         

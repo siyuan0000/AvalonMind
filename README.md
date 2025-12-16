@@ -51,34 +51,27 @@ For local models, install: `pip install transformers torch accelerate`
 
 ## Usage
 
-### Quick Start with Launcher (Recommended)
+### Start the Web Application
 
-Run the interactive launcher:
+Run the application using the entry point:
 ```bash
-python start.py
+python run.py
 ```
+This will start the web server (default: http://localhost:5000).
 
-The launcher allows you to:
-1. **Quick Start Mode**: All 6 players use the same AI backend
-2. **Custom Mode**: Configure each player individually with different backends
+### Project Structure
 
-### Supported AI Backends
+The project follows a modular Python package layout:
 
-1. **Ollama**: Local models via Ollama
-   - Examples: deepseek-r1, qwen2.5, llama3.1, mistral
-
-2. **DeepSeek API**: Online API service
-   - Models: deepseek-chat, deepseek-reasoner
-
-3. **Local Model**: Transformers-based local models
-   - Any HuggingFace model path or model ID
-
-### Direct Usage (Legacy)
-
-Run with default Ollama configuration:
-```bash
-python avalon_ai_game.py
-```
+- `avalon/`: Main package
+  - `core/`: Game engine, controller, and logger
+  - `ai/`: AI backend integrations
+  - `web/`: Flask web application
+  - `arena/`: Arena simulation engine
+  - `services/`: External services (Supabase)
+  - `config.py`: Centralized configuration
+- `run.py`: Application entry point
+- `logs/`: Game logs directory
 
 ### Example: Mixed AI Configuration
 

@@ -2,7 +2,7 @@ import subprocess
 import json
 import re
 import os
-from config import config
+from avalon.config import config
 
 class BaseAI:
     """Base class for AI backends."""

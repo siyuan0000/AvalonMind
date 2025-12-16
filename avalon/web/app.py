@@ -11,13 +11,13 @@ from threading import Thread, Event, Lock
 from queue import Queue
 
 # Core Modules
-from game_engine import AvalonGame
-from game_controller import GameController, HumanPlayer
-from ai_backends import DeepSeekAPI
-from config import config
-from arena import Arena
-from arena_config import AgentConfig, ArenaConfigManager
-from supabase_client import supabase
+from avalon.core.engine import AvalonGame
+from avalon.core.controller import GameController, HumanPlayer
+from avalon.ai.backends import DeepSeekAPI
+from avalon.config import config
+from avalon.arena.engine import Arena
+from avalon.arena.config import AgentConfig, ArenaConfigManager
+from avalon.services.supabase import supabase
 
 app = Flask(__name__)
 
@@ -143,7 +143,7 @@ def handle_human_input(player_name, action_type, **kwargs):
     
     return response
 
-def run_game_thread(config, user_id=None):
+def run_game_thread(game_config, user_id=None):
     """Run game in a separate thread"""
     global running_game
 
@@ -165,7 +165,7 @@ def run_game_thread(config, user_id=None):
             raise ValueError("DeepSeek API Key not found. Please check .env.local")
         
         # Determine User Player (Player 0 - Alice)
-        user_mode = config.get('user_mode', 'watch') # 'play' or 'watch'
+        user_mode = game_config.get('user_mode', 'watch') # 'play' or 'watch'
         
         # Player 0 (Alice) - User or AI
         if user_mode == 'play':
@@ -229,8 +229,8 @@ def start_game():
     """Start a new game with the provided configuration"""
     global running_game
 
-    config = request.json
-    user_id = config.get('user_id')
+    game_config = request.json
+    user_id = game_config.get('user_id')
     
     if running_game['is_running']:
         return jsonify({'error': 'Game is already running'}), 400
@@ -248,7 +248,7 @@ def start_game():
     }
 
     # Start game in a separate thread
-    thread = Thread(target=run_game_thread, args=(config,))
+    thread = Thread(target=run_game_thread, args=(game_config,))
     thread.daemon = True
     thread.start()
 

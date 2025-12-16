@@ -1,11 +1,11 @@
 import random
 import time
 from typing import List, Dict, Optional
-from game_engine import AvalonGame
-from game_controller import GameController
-from ai_backends import OllamaAI, DeepSeekAPI, LocalModelAI
-from prompts import AvalonPrompts
-from arena_config import AgentConfig
+from avalon.core.engine import AvalonGame
+from avalon.core.controller import GameController
+from avalon.ai.backends import OllamaAI, DeepSeekAPI, LocalModelAI
+from avalon.core.prompts import AvalonPrompts
+from avalon.arena.config import AgentConfig
 
 class Arena:
     """
@@ -59,7 +59,7 @@ class Arena:
         else:
             # Default baseline: Ollama deepseek-r1 with default prompts
             baseline_ai_proto = OllamaAI(model_name='deepseek-r1')
-            from prompts import _default_prompts
+            from avalon.core.prompts import _default_prompts
             baseline_prompts = _default_prompts
 
         # Construct player AI list
@@ -82,7 +82,7 @@ class Arena:
                      # but we can set them explicitly if we want.
                      # For now, let's leave them out of the map to test fallback 
                      # or set them to default instance.
-                     from prompts import _default_prompts
+                     from avalon.core.prompts import _default_prompts
                      player_prompts_map[name] = _default_prompts
 
         # Initialize Game
@@ -142,7 +142,7 @@ class Arena:
         self.results.append(match_result)
         
         # Save to Supabase
-        from supabase_client import supabase
+        from avalon.services.supabase import supabase
         supabase.save_arena_match(match_result)
         
         return match_result

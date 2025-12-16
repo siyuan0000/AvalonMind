@@ -21,7 +21,7 @@
 *.log
 
 # venv
-avalon
+
 
 __pycache__/
 *.py[cod]

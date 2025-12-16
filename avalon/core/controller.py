@@ -1,8 +1,8 @@
 import random
 from typing import List, Dict, Optional, Any, Callable
-from game_logger import GameLogger
-from ai_backends import BaseAI
-from game_engine import AvalonGame, Player
+from avalon.core.logger import GameLogger
+from avalon.ai.backends import BaseAI
+from avalon.core.engine import AvalonGame, Player
 
 class HumanPlayer(BaseAI):
     """Interface for a human player via Web UI."""
@@ -57,7 +57,7 @@ class GameController:
 
     def get_player_prompts(self, player):
         """Get prompts for a specific player."""
-        from prompts import _default_prompts
+        from avalon.core.prompts import _default_prompts
         return self.player_prompts.get(player.name, _default_prompts)
 
     def set_input_handler(self, handler):

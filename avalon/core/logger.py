@@ -3,9 +3,9 @@ Game logging functionality for Avalon games.
 """
 
 import json
+import os
 from datetime import datetime
-from pathlib import Path
-from supabase_client import supabase
+from avalon.services.supabase import supabase
 
 
 class GameLogger:
