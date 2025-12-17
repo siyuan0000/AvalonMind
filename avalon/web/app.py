@@ -20,6 +20,9 @@ from avalon.arena.config import AgentConfig, ArenaConfigManager
 from avalon.services.supabase import supabase
 
 # Configure Flask to look for templates and static files in the project root
+template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../templates'))
+static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../static'))
+
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
 # Event streaming setup
