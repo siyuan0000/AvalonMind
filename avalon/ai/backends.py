@@ -31,6 +31,32 @@ class BaseAI:
 
         return None
 
+    def extract_json(self, response):
+        """Extract JSON object from response."""
+        if not response:
+            return None
+
+        # Try direct parsing
+        try:
+            return json.loads(response)
+        except json.JSONDecodeError:
+            pass
+
+        # Try to find JSON block in markdown
+        try:
+            match = re.search(r'```json\s*(\{.*?\})\s*```', response, re.DOTALL)
+            if match:
+                return json.loads(match.group(1))
+            
+            # Try finding just the first brace structure
+            match = re.search(r'(\{.*\})', response, re.DOTALL)
+            if match:
+                return json.loads(match.group(1))
+        except:
+            pass
+            
+        return None
+
 
 class OllamaAI(BaseAI):
     """Interface to call models via Ollama."""

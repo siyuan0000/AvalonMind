@@ -237,6 +237,11 @@ function connectToStream() {
         appendLog(`--- ${data.name} ---`, 'phase');
     });
 
+    eventSource.addEventListener('suspicion', function (event) {
+        const data = JSON.parse(event.data);
+        updateSuspicionHeatmap(data.player, data.scores);
+    });
+
     eventSource.onerror = function (err) {
         console.error("EventSource failed:", err);
         eventSource.close();
@@ -245,6 +250,42 @@ function connectToStream() {
             if (statusInterval) connectToStream();
         }, 5000);
     };
+}
+
+function updateSuspicionHeatmap(observer, scores) {
+    const container = document.getElementById('suspicionHeatmap');
+    container.innerHTML = ''; // Clear waiting message
+
+    // Sort scores by value (descending)
+    const sortedEntries = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+
+    sortedEntries.forEach(([target, score]) => {
+        // Color scale: Green (0) -> Yellow (50) -> Red (100)
+        let colorClass = 'bg-emerald-500';
+        if (score > 30) colorClass = 'bg-yellow-500';
+        if (score > 70) colorClass = 'bg-red-500';
+
+        const card = document.createElement('div');
+        card.className = 'bg-slate-800/50 border border-slate-700 rounded-lg p-3 flex items-center gap-3';
+        card.innerHTML = `
+            <div class="flex-1">
+                <div class="flex justify-between mb-1">
+                    <span class="text-xs font-bold text-slate-300">${target}</span>
+                    <span class="text-xs font-mono text-slate-400">${score}%</span>
+                </div>
+                <div class="w-full bg-slate-700 rounded-full h-1.5">
+                    <div class="${colorClass} h-1.5 rounded-full transition-all duration-500" style="width: ${score}%"></div>
+                </div>
+            </div>
+        `;
+        container.appendChild(card);
+    });
+
+    // Add a label showing whose perspective this is
+    const label = document.createElement('div');
+    label.className = 'col-span-full text-xs text-center text-slate-500 mt-2';
+    label.innerHTML = `Perspective: <strong class="text-indigo-400">${observer}</strong>`;
+    container.appendChild(label);
 }
 
 function appendLog(message, type = 'info') {

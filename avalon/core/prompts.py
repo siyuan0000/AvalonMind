@@ -88,10 +88,19 @@ DECISION PROCESS:
 3. Select team that maximizes success probability for YOUR faction
 4. Ensure selection doesn't reveal your role (especially if Merlin or Evil)
 
-IMPORTANT: After your analysis, output ONLY a comma-separated list of {team_size} player names, nothing else.
-Example format: Alice,Bob,Charlie
+IMPORTANT: You must output your response in strict JSON format.
+{{
+    "thought_process": "Internal reasoning for your selection.",
+    "suspicion_scores": {{
+        "PlayerName1": 0-100,
+        "PlayerName2": 0-100
+    }},
+    "team": ["Player1", "Player2"]
+}}
 
-Your selection:"""
+- team: A list of exactly {team_size} player names.
+
+Your JSON response:"""
 
     def discussion(self, role_info, game_state, leader_name, proposed_team, discussion_history, game_history=""):
         """Prompt for player to discuss proposed team."""
@@ -176,12 +185,24 @@ DISCUSSION STRATEGY FRAMEWORK:
 
 IMPORTANT RULES:
 - Do NOT explicitly state your role or other players' roles
-- Speak in the first person ("I think...", "I vote..."). Do NOT refer to yourself by name (e.g., don't say "Charlie thinks...").
+- Speak in the first person ("I think...", "I vote..."). Do NOT refer to yourself by name.
 - Reference past observations and discussions to support your point
 - Be persuasive but subtle - state your reasoning concisely (1-2 sentences)
-- Use concrete evidence from game history
 
-Your comment:"""
+You must output your response in strict JSON format.
+{{
+    "thought_process": "Internal monologue about your strategy and who you trust/distrust.",
+    "suspicion_scores": {{
+        "PlayerName1": 0-100,
+        "PlayerName2": 0-100
+    }},
+    "comment": "Your public statement to other players (1-2 sentences)."
+}}
+
+- suspicion_scores: A dictionary mapping EACH player name to a score from 0 (Trusted) to 100 (Evil).
+- comment: The actual text that will be shown to other players.
+
+Your JSON response:"""
 
     def leader_final_decision(self, role_info, game_state, player_names, initial_team, team_size, discussion_history, game_history=""):
         """Prompt for leader to make final team decision after discussion."""
@@ -276,10 +297,17 @@ IMPORTANT RULES:
 
 You must select exactly {team_size} players for this mission.
 
-IMPORTANT: After your analysis, output ONLY a comma-separated list of player names for your FINAL team proposal, nothing else.
-Example format: Alice,Bob,Charlie
+IMPORTANT: You must output your response in strict JSON format.
+{{
+    "thought_process": "Internal reasoning for your final decision.",
+    "suspicion_scores": {{
+        "PlayerName1": 0-100,
+        "PlayerName2": 0-100
+    }},
+    "team": ["Player1", "Player2"]
+}}
 
-Your final team:"""
+Your JSON response:"""
 
     def vote(self, role_info, game_state, proposed_team, game_history=""):
         """Prompt for player to vote on proposed team."""
@@ -388,9 +416,17 @@ DECISION RULES:
 - Everyone: Consider how your vote affects others' perception of you
 - GENERAL RULE: If you're on the proposed team, you should strongly lean toward APPROVE unless you have a powerful strategic reason not to
 
-IMPORTANT: After your analysis, output ONLY one word: either "APPROVE" or "REJECT", nothing else.
+IMPORTANT: You must output your response in strict JSON format.
+{{
+    "thought_process": "Internal reasoning for your vote.",
+    "suspicion_scores": {{
+        "PlayerName1": 0-100,
+        "PlayerName2": 0-100
+    }},
+    "vote": "APPROVE" or "REJECT"
+}}
 
-Your vote:"""
+Your JSON response:"""
 
     def mission_action(self, role_info, game_state, game_history=""):
         """Prompt for player to choose mission action."""

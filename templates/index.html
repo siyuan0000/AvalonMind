@@ -223,6 +223,26 @@
             <!-- Right Column: Logs & Reasoning -->
             <div class="lg:col-span-8 space-y-6">
 
+                <!-- Suspicion Heatmap (CHI Demo Feature) -->
+                <div class="glass-panel rounded-xl p-6">
+                    <div class="flex justify-between items-center mb-4">
+                        <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
+                            <svg class="w-4 h-4 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M13 10V3L4 14h7v7l9-11h-7z"></path>
+                            </svg>
+                            Live Suspicion Heatmap
+                        </h2>
+                        <span class="text-xs text-slate-500">Real-time AI Trust Analysis</span>
+                    </div>
+                    <div id="suspicionHeatmap" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                        <!-- Dynamic suspicion cards will be injected here -->
+                        <div class="text-slate-500 text-xs text-center col-span-full py-4 italic">
+                            Waiting for AI analysis...
+                        </div>
+                    </div>
+                </div>
+
                 <!-- Game Log -->
                 <div class="glass-panel rounded-xl flex flex-col h-[500px]">
                     <div

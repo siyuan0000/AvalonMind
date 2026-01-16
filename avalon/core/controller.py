@@ -135,16 +135,40 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
-            self.log_event('reasoning', {'player': player.name, 'content': response})
+            
+            # Try to parse JSON
+            json_data = ai.extract_json(response)
+            if json_data:
+                # Log suspicion scores if present
+                if 'suspicion_scores' in json_data:
+                    self.log_event('suspicion', {
+                        'player': player.name, 
+                        'scores': json_data['suspicion_scores']
+                    })
+                
+                # Log thought process
+                if 'thought_process' in json_data:
+                    self.log_event('reasoning', {
+                        'player': player.name, 
+                        'content': json_data['thought_process']
+                    })
+                
+                # Use the comment field
+                response = json_data.get('comment', response)
+            else:
+                self.log_event('reasoning', {'player': player.name, 'content': response})
 
         if not response:
             return "I'll go with the majority decision."
 
-        # Clean up response - take first 2 sentences max
-        sentences = response.strip().split('.')[:2]
-        comment = '.'.join(sentences).strip()
-        if comment and not comment.endswith('.'):
-            comment += '.'
+        # Clean up response - take first 2 sentences max if it's long text
+        if not json_data:
+            sentences = response.strip().split('.')[:2]
+            comment = '.'.join(sentences).strip()
+            if comment and not comment.endswith('.'):
+                comment += '.'
+        else:
+            comment = response
 
         return comment if comment else "I'll trust the leader's judgment."
 
@@ -183,7 +207,24 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
-            self.log_event('reasoning', {'player': leader.name, 'content': response})
+            
+            # Try to parse JSON
+            json_data = ai.extract_json(response)
+            if json_data:
+                if 'suspicion_scores' in json_data:
+                    self.log_event('suspicion', {'player': leader.name, 'scores': json_data['suspicion_scores']})
+                if 'thought_process' in json_data:
+                    self.log_event('reasoning', {'player': leader.name, 'content': json_data['thought_process']})
+                
+                # Extract team from JSON
+                raw_team = json_data.get('team', [])
+                # Convert list to comma-separated string for legacy parsing below, or handle directly
+                if isinstance(raw_team, list):
+                    response = ",".join(raw_team)
+                else:
+                    response = str(raw_team)
+            else:
+                self.log_event('reasoning', {'player': leader.name, 'content': response})
 
         if not response:
             # Fallback: keep initial team
@@ -199,7 +240,7 @@ class GameController:
             return initial_team, "Keeping original team (invalid AI response)"
 
         team = [p for p in self.game.players if p.name in selected_names]
-        return team, response
+        return team, json_data.get('thought_process', response) if json_data else response
 
     def ai_propose_team(self, leader, team_size):
         """AI leader proposes a team. Returns (team, reasoning)."""
@@ -233,7 +274,23 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
-            self.log_event('reasoning', {'player': leader.name, 'content': response})
+            
+            # Try to parse JSON
+            json_data = ai.extract_json(response)
+            if json_data:
+                if 'suspicion_scores' in json_data:
+                    self.log_event('suspicion', {'player': leader.name, 'scores': json_data['suspicion_scores']})
+                if 'thought_process' in json_data:
+                    self.log_event('reasoning', {'player': leader.name, 'content': json_data['thought_process']})
+                
+                # Extract team from JSON
+                raw_team = json_data.get('team', [])
+                if isinstance(raw_team, list):
+                    response = ",".join(raw_team)
+                else:
+                    response = str(raw_team)
+            else:
+                self.log_event('reasoning', {'player': leader.name, 'content': response})
 
         if not response:
             # Fallback: random selection
@@ -250,7 +307,7 @@ class GameController:
             return random.sample(self.game.players, team_size), "Random selection (AI response was invalid)"
 
         team = [p for p in self.game.players if p.name in selected_names]
-        return team, response
+        return team, json_data.get('thought_process', response) if json_data else response
 
     def ai_vote(self, player, proposed_team):
         """AI player votes on proposed team."""
@@ -280,7 +337,18 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
-            self.log_event('reasoning', {'player': player.name, 'content': response})
+            
+            # Try to parse JSON
+            json_data = ai.extract_json(response)
+            if json_data:
+                if 'suspicion_scores' in json_data:
+                    self.log_event('suspicion', {'player': player.name, 'scores': json_data['suspicion_scores']})
+                if 'thought_process' in json_data:
+                    self.log_event('reasoning', {'player': player.name, 'content': json_data['thought_process']})
+                
+                response = json_data.get('vote', response)
+            else:
+                self.log_event('reasoning', {'player': player.name, 'content': response})
         
         vote = ai.extract_choice(response, ['APPROVE', 'REJECT'])
 
@@ -315,7 +383,18 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
-            self.log_event('reasoning', {'player': player.name, 'content': response})
+            
+            # Try to parse JSON
+            json_data = ai.extract_json(response)
+            if json_data:
+                if 'suspicion_scores' in json_data:
+                    self.log_event('suspicion', {'player': player.name, 'scores': json_data['suspicion_scores']})
+                if 'thought_process' in json_data:
+                    self.log_event('reasoning', {'player': player.name, 'content': json_data['thought_process']})
+                
+                response = json_data.get('action', response)
+            else:
+                self.log_event('reasoning', {'player': player.name, 'content': response})
 
         action = ai.extract_choice(response, ['SUCCESS', 'FAIL'])
 
@@ -357,7 +436,18 @@ class GameController:
             )
         else:
             response = ai.call_model(prompt)
-            self.log_event('reasoning', {'player': assassin.name, 'content': response})
+            
+            # Try to parse JSON
+            json_data = ai.extract_json(response)
+            if json_data:
+                if 'suspicion_scores' in json_data:
+                    self.log_event('suspicion', {'player': assassin.name, 'scores': json_data['suspicion_scores']})
+                if 'thought_process' in json_data:
+                    self.log_event('reasoning', {'player': assassin.name, 'content': json_data['thought_process']})
+                
+                response = json_data.get('target', response)
+            else:
+                self.log_event('reasoning', {'player': assassin.name, 'content': response})
 
         # Extract target name
         target_name = None

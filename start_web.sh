@@ -11,4 +11,4 @@ if ! python3 -c "import flask" 2>/dev/null; then
 fi
 
 # Start the web server
-python3 web_ui.py
+python3 run.py
