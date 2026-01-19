@@ -6,6 +6,7 @@ import json
 import os
 from datetime import datetime
 from avalon.services.supabase import supabase
+from pathlib import Path
 
 
 class GameLogger:
@@ -29,7 +30,7 @@ class GameLogger:
 
     def log_players(self, players, player_ais):
         """Log player information including roles and AI configurations."""
-        from avalon_ai_game import OllamaAI, DeepSeekAPI, LocalModelAI
+        from avalon.ai.backends import OllamaAI, DeepSeekAPI, LocalModelAI
 
         for player, ai in zip(players, player_ais):
             ai_type = type(ai).__name__

@@ -2,112 +2,12 @@
 
 // Global state
 let statusInterval = null;
-let currentUser = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function () {
     loadRecentGames();
-    setupAuth();
     startStatusPolling();
-
-    // Check for stored user
-    const storedUser = localStorage.getItem('avalon_user');
-    if (storedUser) {
-        currentUser = JSON.parse(storedUser);
-        updateAuthUI();
-        fetchTokenUsage();
-    }
 });
-
-function setupAuth() {
-    const modal = document.getElementById('authModal');
-    const loginBtn = document.getElementById('loginBtn');
-    const closeBtn = document.querySelector('.close');
-    const logoutBtn = document.getElementById('logoutBtn');
-    const submitLogin = document.getElementById('submitLogin');
-    const submitSignup = document.getElementById('submitSignup');
-
-    loginBtn.onclick = () => modal.style.display = 'flex';
-    closeBtn.onclick = () => modal.style.display = 'none';
-    window.onclick = (event) => {
-        if (event.target == modal) modal.style.display = 'none';
-    };
-
-    logoutBtn.onclick = () => {
-        currentUser = null;
-        localStorage.removeItem('avalon_user');
-        updateAuthUI();
-    };
-
-    submitLogin.onclick = (e) => {
-        e.preventDefault();
-        console.log('Login clicked');
-        handleAuth('/api/login');
-    };
-
-    submitSignup.onclick = (e) => {
-        e.preventDefault();
-        console.log('Signup clicked');
-        handleAuth('/api/signup');
-    };
-}
-
-async function handleAuth(endpoint) {
-    console.log('Handling auth for:', endpoint);
-    const email = document.getElementById('email').value;
-    const password = document.getElementById('password').value;
-    const messageEl = document.getElementById('authMessage');
-
-    try {
-        const response = await fetch(endpoint, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
-        });
-
-        const data = await response.json();
-        console.log('Auth response:', data);
-
-        if (response.ok) {
-            currentUser = data.user;
-            localStorage.setItem('avalon_user', JSON.stringify(currentUser));
-            document.getElementById('authModal').style.display = 'none';
-            updateAuthUI();
-            fetchTokenUsage();
-            messageEl.textContent = '';
-        } else {
-            messageEl.textContent = data.error || 'Authentication failed';
-        }
-    } catch (error) {
-        messageEl.textContent = 'Network error';
-    }
-}
-
-function updateAuthUI() {
-    const loginBtn = document.getElementById('loginBtn');
-    const dashboard = document.getElementById('userDashboard');
-    const userEmail = document.getElementById('userEmail');
-
-    if (currentUser) {
-        loginBtn.style.display = 'none';
-        dashboard.style.display = 'flex';
-        userEmail.textContent = currentUser.email;
-    } else {
-        loginBtn.style.display = 'block';
-        dashboard.style.display = 'none';
-    }
-}
-
-async function fetchTokenUsage() {
-    if (!currentUser) return;
-    try {
-        const response = await fetch(`/api/user/${currentUser.id}/usage`);
-        const data = await response.json();
-        document.getElementById('tokenCount').textContent = data.total_tokens;
-    } catch (error) {
-        console.error('Failed to fetch usage:', error);
-    }
-}
 
 async function startGame() {
     const startButton = document.getElementById('startButton');
@@ -125,8 +25,7 @@ async function startGame() {
                 'Content-Type': 'application/json',
             },
             body: JSON.stringify({
-                user_mode: userMode,
-                user_id: currentUser ? currentUser.id : null
+                user_mode: userMode
             }),
         });
 

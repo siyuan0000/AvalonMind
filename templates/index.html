@@ -97,25 +97,9 @@
                 </div>
                 <div class="flex items-center gap-6">
                     <a href="/" class="text-white font-medium border-b-2 border-indigo-500 px-1 py-4">Control Panel</a>
-                    <a href="/arena" class="text-slate-400 hover:text-white transition-colors px-1 py-4">Arena</a>
-
-                    <div id="authContainer" class="flex items-center gap-4 ml-4 pl-4 border-l border-slate-800">
-                        <button id="loginBtn"
-                            class="text-sm font-medium text-indigo-400 hover:text-indigo-300 transition-colors">Login</button>
-                        <div id="userDashboard" class="hidden flex items-center gap-3">
-                            <div class="flex flex-col items-end">
-                                <span id="userEmail" class="text-xs text-slate-400">user@example.com</span>
-                                <span
-                                    class="text-xs font-mono text-emerald-400 bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">
-                                    <span id="tokenCount">0</span> tokens
-                                </span>
-                            </div>
-                            <button id="logoutBtn"
-                                class="text-xs text-slate-500 hover:text-white transition-colors">Logout</button>
-                        </div>
-                    </div>
                 </div>
             </div>
+        </div>
         </div>
     </nav>
 
@@ -287,45 +271,7 @@
         </div>
     </footer>
 
-    <!-- Auth Modal -->
-    <div id="authModal"
-        class="hidden fixed inset-0 z-[100] flex items-center justify-center bg-black/80 backdrop-blur-sm">
-        <div
-            class="glass-panel w-full max-w-md p-8 rounded-2xl shadow-2xl transform transition-all scale-100 border border-slate-700">
-            <button class="close absolute top-4 right-4 text-slate-500 hover:text-white transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
-                    </path>
-                </svg>
-            </button>
-
-            <div class="text-center mb-8">
-                <h2 class="text-2xl font-bold text-white mb-2">Welcome Back</h2>
-                <p class="text-slate-400 text-sm">Sign in to track your stats and tokens</p>
-            </div>
-
-            <form id="authForm" class="space-y-4">
-                <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1 uppercase">Email Address</label>
-                    <input type="email" id="email" required class="input-dark" placeholder="name@example.com">
-                </div>
-                <div>
-                    <label class="block text-xs font-medium text-slate-400 mb-1 uppercase">Password</label>
-                    <input type="password" id="password" required class="input-dark" placeholder="••••••••">
-                </div>
-
-                <p id="authMessage" class="text-red-400 text-xs min-h-[1.5em] text-center"></p>
-
-                <div class="flex gap-3 pt-2">
-                    <button type="submit" id="submitLogin"
-                        class="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors">Login</button>
-                    <button type="button" id="submitSignup"
-                        class="flex-1 py-2.5 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors">Sign
-                        Up</button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <!-- Auth Modal Removed -->
 
     <script src="/static/script.js"></script>
 </body>
