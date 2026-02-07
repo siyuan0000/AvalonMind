@@ -3,6 +3,9 @@
 // Global state
 let statusInterval = null;
 let currentUser = null;
+let lastPendingInput = null;  // Track last pending input to avoid unnecessary re-renders
+let currentPlayerRole = null;  // Track current player's role
+let gameStarted = false;  // Track if game has started
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function () {
@@ -223,6 +226,9 @@ async function startGame() {
                 statusInterval = setInterval(updateGameStatus, 1000);
             }
             connectToStream();
+            
+            // Fetch player role when game starts
+            setTimeout(fetchPlayerRole, 1000);
         } else if (response.status === 401) {
             // Not authenticated
             statusMessage.textContent = 'Please login to play';
@@ -489,19 +495,40 @@ async function updateGameStatus() {
             }
             document.getElementById('stopButton').classList.add('hidden');
             document.getElementById('stopButton').disabled = false;
+            
+            // Reset game state
+            gameStarted = false;
+            updateSeatingChart('idle');
         } else if (status.status === 'starting' || status.status === 'initializing') {
             if (statusMessage) statusMessage.textContent = 'Game is starting...';
             document.getElementById('interactionCard').style.display = 'none';
             document.getElementById('stopButton').classList.remove('hidden');
+            
+            // Game is starting
+            gameStarted = true;
+            updateSeatingChart('starting');
         } else if (status.status === 'running') {
             if (statusMessage) statusMessage.textContent = 'Game is running...';
             document.getElementById('stopButton').classList.remove('hidden');
+            
+            // Game is running
+            gameStarted = true;
+            updateSeatingChart('running', status.current_action);
 
-            // Check for pending input
+            // Check for pending input - only re-render if input type/data has changed
             if (status.pending_input) {
-                showInputForm(status.pending_input);
+                // Compare with last pending input to avoid unnecessary re-renders
+                const shouldRender = !lastPendingInput || 
+                                   lastPendingInput.type !== status.pending_input.type ||
+                                   JSON.stringify(lastPendingInput.data) !== JSON.stringify(status.pending_input.data);
+                            
+                if (shouldRender) {
+                    showInputForm(status.pending_input);
+                    lastPendingInput = status.pending_input;
+                }
             } else {
                 document.getElementById('interactionCard').style.display = 'none';
+                lastPendingInput = null;
             }
 
         } else if (status.status === 'completed') {
@@ -518,6 +545,10 @@ async function updateGameStatus() {
                 eventSource = null;
             }
             document.getElementById('stopButton').classList.add('hidden');
+            
+            // Game completed
+            updateSeatingChart('completed');
+            
             // Refresh auth status to update weekly count
             checkAuthStatus();
         } else if (status.status === 'error') {
@@ -534,6 +565,9 @@ async function updateGameStatus() {
                 eventSource = null;
             }
             document.getElementById('stopButton').classList.add('hidden');
+            
+            // Show error in seating chart
+            updateSeatingChart('error');
         }
 
     } catch (error) {
@@ -714,5 +748,93 @@ function getStatusClasses(status) {
         case 'completed': return 'bg-emerald-900/30 text-emerald-400 border-emerald-500/30';
         case 'error': return 'bg-red-900/30 text-red-400 border-red-500/30';
         default: return 'bg-slate-800 text-slate-400 border-slate-700';
+    }
+}
+
+// ============== Seating Chart Functions ==============
+
+function updateSeatingChart(gameStatus, currentAction = '') {
+    const phaseElement = document.getElementById('currentPhase');
+    
+    // Update phase text
+    switch (gameStatus) {
+        case 'idle':
+            phaseElement.textContent = 'Waiting to start';
+            phaseElement.className = 'text-amber-400 font-medium';
+            break;
+        case 'starting':
+        case 'initializing':
+            phaseElement.textContent = 'Game Starting...';
+            phaseElement.className = 'text-amber-400 font-medium animate-pulse';
+            break;
+        case 'running':
+            phaseElement.textContent = currentAction || 'Game in Progress';
+            phaseElement.className = 'text-indigo-400 font-medium';
+            break;
+        case 'completed':
+            phaseElement.textContent = 'Game Completed!';
+            phaseElement.className = 'text-emerald-400 font-medium';
+            break;
+        case 'error':
+            phaseElement.textContent = 'Error Occurred';
+            phaseElement.className = 'text-red-400 font-medium';
+            break;
+        default:
+            phaseElement.textContent = 'Unknown';
+            phaseElement.className = 'text-slate-400 font-medium';
+    }
+    
+    // Update player indicators based on game state
+    const seatElements = [
+        document.getElementById('seat1'),
+        document.getElementById('seat2'),
+        document.getElementById('seat3'),
+        document.getElementById('seat4'),
+        document.getElementById('seat5'),
+        document.getElementById('seat6')
+    ];
+    
+    // Reset all seats to default state
+    seatElements.forEach((seat, index) => {
+        if (seat) {
+            const parent = seat.parentElement;
+            if (parent) {
+                if (index === 0) {
+                    // Player 1 (Human) - special styling
+                    parent.className = 'absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg border-2 border-indigo-300';
+                } else {
+                    // AI players
+                    parent.className = 'absolute w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border-2 border-slate-600';
+                }
+            }
+        }
+    });
+    
+    // Add active indicators based on game status
+    if (gameStatus === 'running' || gameStatus === 'starting' || gameStatus === 'initializing') {
+        // Add active indicator to Player 1 (you)
+        const player1Indicator = document.querySelector('#seat1').parentElement.querySelector('div:last-child');
+        if (player1Indicator) {
+            player1Indicator.className = 'absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white animate-pulse';
+        }
+    }
+}
+
+// Fetch and display player role when game starts
+async function fetchPlayerRole() {
+    try {
+        // In a real implementation, this would fetch the actual role from the game state
+        // For now, we'll simulate it
+        currentPlayerRole = 'Merlin'; // Default role
+        
+        // Update player name display with role
+        const playerNameElement = document.getElementById('playerName');
+        if (playerNameElement) {
+            playerNameElement.textContent = `Alice (${currentPlayerRole})`;
+        }
+        
+        console.log(`[INFO] Player role: ${currentPlayerRole}`);
+    } catch (error) {
+        console.error('Failed to fetch player role:', error);
     }
 }

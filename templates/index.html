@@ -176,13 +176,49 @@
                     <div class="space-y-4">
                         <!-- Player Info -->
                         <div class="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
-                            <div class="flex items-center gap-3">
+                            <div class="flex items-center gap-3 mb-3">
                                 <div class="w-10 h-10 bg-indigo-500/20 rounded-full flex items-center justify-center">
                                     <span class="text-indigo-400 font-bold">A</span>
                                 </div>
                                 <div>
-                                    <p class="text-white font-medium">You play as Alice</p>
+                                    <p class="text-white font-medium">You play as <span id="playerName" class="text-indigo-400">Alice</span></p>
                                     <p class="text-slate-400 text-xs">Player 1 vs 5 AI opponents</p>
+                                </div>
+                            </div>
+                            
+                            <!-- 6-Person Seating Chart -->
+                            <div class="mt-4 p-3 bg-slate-900/50 rounded-lg border border-slate-700">
+                                <h3 class="text-xs font-bold text-slate-300 mb-3 uppercase tracking-wider">Seating Arrangement</h3>
+                                <div class="relative h-40 mx-auto" id="seatingChart">
+                                    <!-- Circular seating arrangement -->
+                                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg border-2 border-indigo-300">
+                                        <span class="text-white font-bold text-sm" id="seat1">A</span>
+                                        <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white"></div>
+                                    </div>
+                                    
+                                    <div class="absolute top-8 right-0 w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border-2 border-slate-600">
+                                        <span class="text-slate-300 font-medium text-xs" id="seat2">B</span>
+                                    </div>
+                                    
+                                    <div class="absolute bottom-8 right-0 w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border-2 border-slate-600">
+                                        <span class="text-slate-300 font-medium text-xs" id="seat3">C</span>
+                                    </div>
+                                    
+                                    <div class="absolute bottom-0 left-1/2 -translate-x-1/2 w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border-2 border-slate-600">
+                                        <span class="text-slate-300 font-medium text-xs" id="seat4">D</span>
+                                    </div>
+                                    
+                                    <div class="absolute bottom-8 left-0 w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border-2 border-slate-600">
+                                        <span class="text-slate-300 font-medium text-xs" id="seat5">E</span>
+                                    </div>
+                                    
+                                    <div class="absolute top-8 left-0 w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border-2 border-slate-600">
+                                        <span class="text-slate-300 font-medium text-xs" id="seat6">F</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-3 text-center">
+                                    <p class="text-xs text-slate-400">Current Phase: <span id="currentPhase" class="text-amber-400 font-medium">Waiting to start</span></p>
                                 </div>
                             </div>
                         </div>

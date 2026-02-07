@@ -157,6 +157,7 @@ class GameController:
                 response = json_data.get('comment', response)
             else:
                 self.log_event('reasoning', {'player': player.name, 'content': response})
+                json_data = None  # Ensure json_data is defined
 
         if not response:
             return "I'll go with the majority decision."
@@ -225,6 +226,7 @@ class GameController:
                     response = str(raw_team)
             else:
                 self.log_event('reasoning', {'player': leader.name, 'content': response})
+                json_data = None  # Ensure json_data is defined
 
         if not response:
             # Fallback: keep initial team

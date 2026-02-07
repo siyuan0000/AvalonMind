@@ -237,11 +237,24 @@ def stop_game():
 @app.route('/api/game_status')
 def game_status():
     """Get current game status"""
-    # Create a copy to avoid serialization issues with Event objects
-    status_copy = running_game.copy()
-    if 'input_event' in status_copy:
-        del status_copy['input_event']
-    return jsonify(status_copy)
+    try:
+        # Create a copy to avoid serialization issues with Event objects
+        status_copy = running_game.copy()
+        if 'input_event' in status_copy:
+            del status_copy['input_event']
+        
+        # Ensure all values are JSON serializable
+        for key, value in status_copy.items():
+            if hasattr(value, '__dict__') or callable(value):
+                status_copy[key] = str(value)
+        
+        return jsonify(status_copy)
+    except Exception as e:
+        print(f"Error in game_status: {e}")
+        return jsonify({
+            'status': 'error',
+            'error': f'Server error: {str(e)}'
+        }), 500
 
 @app.route('/api/submit_action', methods=['POST'])
 def submit_action():
