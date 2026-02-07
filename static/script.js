@@ -2,18 +2,204 @@
 
 // Global state
 let statusInterval = null;
+let currentUser = null;
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function () {
-    loadRecentGames();
+    checkAuthStatus();
     startStatusPolling();
 });
 
+// ============== Authentication ==============
+
+async function checkAuthStatus() {
+    try {
+        const response = await fetch('/api/auth/me');
+        const data = await response.json();
+        
+        if (data.authenticated) {
+            currentUser = data.user;
+            updateUIForLoggedInUser(data.user);
+        } else {
+            currentUser = null;
+            updateUIForLoggedOutUser();
+        }
+    } catch (error) {
+        console.error('Failed to check auth status:', error);
+        currentUser = null;
+        updateUIForLoggedOutUser();
+    }
+}
+
+function updateUIForLoggedInUser(user) {
+    // Update nav email
+    const navEmail = document.getElementById('navUserEmail');
+    if (navEmail) {
+        navEmail.textContent = user.email.split('@')[0];
+        navEmail.classList.remove('hidden');
+    }
+    
+    // Update weekly games info
+    const weeklyInfo = document.getElementById('weeklyGamesInfo');
+    const weeklyText = document.getElementById('weeklyGamesText');
+    if (weeklyInfo && weeklyText) {
+        if (user.is_vip) {
+            weeklyInfo.classList.add('hidden');
+        } else {
+            weeklyInfo.classList.remove('hidden');
+            weeklyText.textContent = `Games this week: ${user.weekly_games}/1`;
+        }
+    }
+    
+    // Update modal user info
+    document.getElementById('authForm').classList.add('hidden');
+    document.getElementById('userInfo').classList.remove('hidden');
+    document.getElementById('userEmail').textContent = user.email;
+    
+    const vipBadge = document.getElementById('vipBadge');
+    const userWeeklyGames = document.getElementById('userWeeklyGames');
+    
+    if (user.is_vip) {
+        vipBadge.classList.remove('hidden');
+        userWeeklyGames.textContent = 'Unlimited games';
+    } else {
+        vipBadge.classList.add('hidden');
+        userWeeklyGames.textContent = `${user.weekly_games}/1 games this week`;
+    }
+}
+
+function updateUIForLoggedOutUser() {
+    // Hide nav email
+    const navEmail = document.getElementById('navUserEmail');
+    if (navEmail) {
+        navEmail.classList.add('hidden');
+    }
+    
+    // Hide weekly games info
+    const weeklyInfo = document.getElementById('weeklyGamesInfo');
+    if (weeklyInfo) {
+        weeklyInfo.classList.add('hidden');
+    }
+    
+    // Update modal
+    document.getElementById('authForm').classList.remove('hidden');
+    document.getElementById('userInfo').classList.add('hidden');
+}
+
+function openSettingsModal() {
+    document.getElementById('settingsModal').classList.remove('hidden');
+    document.getElementById('authError').classList.add('hidden');
+}
+
+function closeSettingsModal() {
+    document.getElementById('settingsModal').classList.add('hidden');
+}
+
+// Close modal when clicking outside
+document.addEventListener('click', function(e) {
+    const modal = document.getElementById('settingsModal');
+    if (e.target === modal) {
+        closeSettingsModal();
+    }
+});
+
+async function handleLogin() {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    const errorEl = document.getElementById('authError');
+    
+    if (!email || !password) {
+        errorEl.textContent = 'Please enter email and password';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/auth/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            errorEl.classList.add('hidden');
+            await checkAuthStatus();
+            closeSettingsModal();
+        } else {
+            errorEl.textContent = data.error || 'Login failed';
+            errorEl.classList.remove('hidden');
+        }
+    } catch (error) {
+        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.classList.remove('hidden');
+    }
+}
+
+async function handleRegister() {
+    const email = document.getElementById('authEmail').value;
+    const password = document.getElementById('authPassword').value;
+    const errorEl = document.getElementById('authError');
+    
+    if (!email || !password) {
+        errorEl.textContent = 'Please enter email and password';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    
+    if (password.length < 6) {
+        errorEl.textContent = 'Password must be at least 6 characters';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    
+    try {
+        const response = await fetch('/api/auth/register', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email, password })
+        });
+        
+        const data = await response.json();
+        
+        if (response.ok) {
+            errorEl.classList.add('hidden');
+            await checkAuthStatus();
+            closeSettingsModal();
+        } else {
+            errorEl.textContent = data.error || 'Registration failed';
+            errorEl.classList.remove('hidden');
+        }
+    } catch (error) {
+        errorEl.textContent = 'Network error. Please try again.';
+        errorEl.classList.remove('hidden');
+    }
+}
+
+async function handleLogout() {
+    try {
+        await fetch('/api/auth/logout', { method: 'POST' });
+        currentUser = null;
+        updateUIForLoggedOutUser();
+        closeSettingsModal();
+    } catch (error) {
+        console.error('Logout failed:', error);
+    }
+}
+
+function handleSwitchAccount() {
+    handleLogout();
+    setTimeout(() => {
+        openSettingsModal();
+    }, 100);
+}
+
+// ============== Game Control ==============
+
 async function startGame() {
     const startButton = document.getElementById('startButton');
-    const statusMessage = document.getElementById('statusMessage');
-    const userModeSelect = document.querySelector('input[name="userMode"]:checked');
-    const userMode = userModeSelect ? userModeSelect.value : 'watch';
+    const statusMessage = document.getElementById('configStatusMessage');
 
     startButton.disabled = true;
     statusMessage.textContent = 'Starting game...';
@@ -24,9 +210,7 @@ async function startGame() {
             headers: {
                 'Content-Type': 'application/json',
             },
-            body: JSON.stringify({
-                user_mode: userMode
-            }),
+            body: JSON.stringify({}),
         });
 
         const data = await response.json();
@@ -39,6 +223,16 @@ async function startGame() {
                 statusInterval = setInterval(updateGameStatus, 1000);
             }
             connectToStream();
+        } else if (response.status === 401) {
+            // Not authenticated
+            statusMessage.textContent = 'Please login to play';
+            startButton.disabled = false;
+            openSettingsModal();
+        } else if (response.status === 403 && data.weekly_limit_reached) {
+            // Weekly limit reached
+            statusMessage.textContent = 'Weekly game limit reached';
+            startButton.disabled = false;
+            alert('You have reached your weekly game limit (1 game per week).\n\nUpgrade to VIP for unlimited games!');
         } else {
             statusMessage.textContent = 'Error: ' + data.error;
             startButton.disabled = false;
@@ -59,7 +253,7 @@ async function stopGame() {
     }
 
     stopButton.disabled = true;
-    statusMessage.textContent = 'Stopping game...';
+    if (statusMessage) statusMessage.textContent = 'Stopping game...';
 
     try {
         const response = await fetch('/api/stop_game', {
@@ -68,13 +262,13 @@ async function stopGame() {
         const data = await response.json();
 
         if (response.ok) {
-            statusMessage.textContent = 'Game stopped';
+            if (statusMessage) statusMessage.textContent = 'Game stopped';
         } else {
-            statusMessage.textContent = 'Error: ' + data.error;
+            if (statusMessage) statusMessage.textContent = 'Error: ' + data.error;
             stopButton.disabled = false;
         }
     } catch (error) {
-        statusMessage.textContent = 'Failed to stop game';
+        if (statusMessage) statusMessage.textContent = 'Failed to stop game';
         stopButton.disabled = false;
         console.error('Stop game error:', error);
     }
@@ -151,6 +345,8 @@ function connectToStream() {
     };
 }
 
+// ============== Improved Suspicion Heatmap ==============
+
 function updateSuspicionHeatmap(observer, scores) {
     const container = document.getElementById('suspicionHeatmap');
     container.innerHTML = ''; // Clear waiting message
@@ -158,34 +354,54 @@ function updateSuspicionHeatmap(observer, scores) {
     // Sort scores by value (descending)
     const sortedEntries = Object.entries(scores).sort((a, b) => b[1] - a[1]);
 
-    sortedEntries.forEach(([target, score]) => {
-        // Color scale: Green (0) -> Yellow (50) -> Red (100)
-        let colorClass = 'bg-emerald-500';
-        if (score > 30) colorClass = 'bg-yellow-500';
-        if (score > 70) colorClass = 'bg-red-500';
+    sortedEntries.forEach(([target, score], index) => {
+        // Determine color based on score
+        let barColorClass = 'from-emerald-500 to-emerald-400';
+        let textColorClass = 'text-emerald-400';
+        let bgColorClass = 'bg-emerald-500/10';
+        let borderColorClass = 'border-emerald-500/30';
+        
+        if (score > 70) {
+            barColorClass = 'from-red-500 to-red-400';
+            textColorClass = 'text-red-400';
+            bgColorClass = 'bg-red-500/10';
+            borderColorClass = 'border-red-500/30';
+        } else if (score > 30) {
+            barColorClass = 'from-amber-500 to-amber-400';
+            textColorClass = 'text-amber-400';
+            bgColorClass = 'bg-amber-500/10';
+            borderColorClass = 'border-amber-500/30';
+        }
 
         const card = document.createElement('div');
-        card.className = 'bg-slate-800/50 border border-slate-700 rounded-lg p-3 flex items-center gap-3';
+        card.className = `${bgColorClass} border ${borderColorClass} rounded-lg p-4 transition-all duration-300 hover:scale-[1.02]`;
         card.innerHTML = `
-            <div class="flex-1">
-                <div class="flex justify-between mb-1">
-                    <span class="text-xs font-bold text-slate-300">${target}</span>
-                    <span class="text-xs font-mono text-slate-400">${score}%</span>
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-sm">
+                    ${target.charAt(0)}
                 </div>
-                <div class="w-full bg-slate-700 rounded-full h-1.5">
-                    <div class="${colorClass} h-1.5 rounded-full transition-all duration-500" style="width: ${score}%"></div>
+                <div class="flex-1">
+                    <div class="flex justify-between items-center mb-2">
+                        <span class="text-sm font-semibold text-white">${target}</span>
+                        <span class="text-lg font-bold ${textColorClass}">${score}%</span>
+                    </div>
+                    <div class="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
+                        <div class="bg-gradient-to-r ${barColorClass} h-2.5 rounded-full transition-all duration-700 ease-out" style="width: ${score}%"></div>
+                    </div>
                 </div>
             </div>
         `;
         container.appendChild(card);
     });
 
-    // Add a label showing whose perspective this is
+    // Add observer label
     const label = document.createElement('div');
-    label.className = 'col-span-full text-xs text-center text-slate-500 mt-2';
-    label.innerHTML = `Perspective: <strong class="text-indigo-400">${observer}</strong>`;
+    label.className = 'text-xs text-center text-slate-500 mt-4 pt-3 border-t border-slate-700';
+    label.innerHTML = `Viewing suspicion from <strong class="text-indigo-400">${observer}</strong>'s perspective`;
     container.appendChild(label);
 }
+
+// ============== Game Log ==============
 
 function appendLog(message, type = 'info') {
     const logContainer = document.getElementById('gameLog');
@@ -209,7 +425,7 @@ function appendLog(message, type = 'info') {
     logContainer.scrollTop = logContainer.scrollHeight;
 
     // Remove placeholder if present
-    const placeholder = logContainer.querySelector('p.text-slate-500'); // Updated selector for placeholder
+    const placeholder = logContainer.querySelector('p.text-slate-500');
     if (placeholder && placeholder.textContent.includes('Waiting')) placeholder.remove();
 }
 
@@ -228,11 +444,12 @@ function appendReasoning(player, content) {
     container.scrollTop = container.scrollHeight;
 
     // Remove placeholder if present
-    const placeholder = container.querySelector('p.text-slate-600'); // Updated selector
+    const placeholder = container.querySelector('p.text-slate-600');
     if (placeholder && placeholder.textContent.includes('AI internal')) placeholder.remove();
 }
 
-// Update game status display
+// ============== Game Status ==============
+
 async function updateGameStatus() {
     try {
         const response = await fetch('/api/game_status');
@@ -258,9 +475,9 @@ async function updateGameStatus() {
 
         // Update message
         if (status.status === 'idle') {
-            statusMessage.textContent = 'Ready to start a new game';
+            if (statusMessage) statusMessage.textContent = 'Ready to start a new game';
             startButton.disabled = false;
-            startButton.textContent = 'Start Game';
+            startButton.textContent = 'Start New Game';
             document.getElementById('interactionCard').style.display = 'none';
             if (statusInterval) {
                 clearInterval(statusInterval);
@@ -273,11 +490,11 @@ async function updateGameStatus() {
             document.getElementById('stopButton').classList.add('hidden');
             document.getElementById('stopButton').disabled = false;
         } else if (status.status === 'starting' || status.status === 'initializing') {
-            statusMessage.textContent = 'Game is starting...';
+            if (statusMessage) statusMessage.textContent = 'Game is starting...';
             document.getElementById('interactionCard').style.display = 'none';
             document.getElementById('stopButton').classList.remove('hidden');
         } else if (status.status === 'running') {
-            statusMessage.textContent = 'Game is running...';
+            if (statusMessage) statusMessage.textContent = 'Game is running...';
             document.getElementById('stopButton').classList.remove('hidden');
 
             // Check for pending input
@@ -288,7 +505,7 @@ async function updateGameStatus() {
             }
 
         } else if (status.status === 'completed') {
-            statusMessage.innerHTML = `Game completed! <a href="/viewer?game=${status.game_id}">View results</a>`;
+            if (statusMessage) statusMessage.innerHTML = `Game completed! <a href="/record" class="text-indigo-400 hover:underline">View records</a>`;
             startButton.disabled = false;
             startButton.textContent = 'Start Another Game';
             document.getElementById('interactionCard').style.display = 'none';
@@ -300,10 +517,11 @@ async function updateGameStatus() {
                 eventSource.close();
                 eventSource = null;
             }
-            loadRecentGames(); // Refresh game list
             document.getElementById('stopButton').classList.add('hidden');
+            // Refresh auth status to update weekly count
+            checkAuthStatus();
         } else if (status.status === 'error') {
-            statusMessage.textContent = 'Error: ' + (status.error || 'Unknown error');
+            if (statusMessage) statusMessage.textContent = 'Error: ' + (status.error || 'Unknown error');
             startButton.disabled = false;
             startButton.textContent = 'Try Again';
             document.getElementById('interactionCard').style.display = 'none';
@@ -323,14 +541,14 @@ async function updateGameStatus() {
     }
 }
 
+// ============== Player Input Forms ==============
+
 function showInputForm(inputRequest) {
     const card = document.getElementById('interactionCard');
-    const playerSpan = document.getElementById('interactionPlayer');
     const promptP = document.getElementById('interactionPrompt');
     const contentDiv = document.getElementById('interactionContent');
 
     card.style.display = 'block';
-    playerSpan.textContent = inputRequest.player;
 
     const type = inputRequest.type;
     const data = inputRequest.data;
@@ -338,7 +556,7 @@ function showInputForm(inputRequest) {
     let html = '';
 
     if (type === 'discussion') {
-        promptP.textContent = `Discussion Phase: What do you want to say about the proposed team(${data.proposed_team.join(', ')}) ? `;
+        promptP.textContent = `Discussion Phase: What do you want to say about the proposed team (${data.proposed_team.join(', ')})?`;
         html = `
             <div class="space-y-4">
                 <textarea id="discussionInput" rows="3" class="input-dark w-full" placeholder="Enter your comment..."></textarea>
@@ -392,7 +610,7 @@ function showInputForm(inputRequest) {
             </div>
         `;
     } else if (type === 'vote') {
-        promptP.textContent = `Vote on the proposed team: ${data.proposed_team.join(', ')} `;
+        promptP.textContent = `Vote on the proposed team: ${data.proposed_team.join(', ')}`;
         html = `
             <div class="flex gap-4">
                 <button class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors" onclick="submitAction('APPROVE')">APPROVE</button>
@@ -474,43 +692,8 @@ function submitAssassinTarget() {
     submitAction(selected.value);
 }
 
-// Load recent games list
-async function loadRecentGames() {
-    const gamesContainer = document.getElementById('recentGames');
+// ============== Utilities ==============
 
-    try {
-        const response = await fetch('/api/logs');
-        const data = await response.json();
-
-        if (data.logs.length === 0) {
-            gamesContainer.innerHTML = '<p class="info-text">No games played yet. Start a game to see results here!</p>';
-            return;
-        }
-
-        // Display recent games (limit to 10)
-        const recentGames = data.logs.slice(0, 10);
-        gamesContainer.innerHTML = recentGames.map(game => `
-    < div class="game-item" onclick = "viewGame('${game.game_id}')" >
-                <div class="game-item-header">
-                    <span class="game-id">${game.game_id}</span>
-                    <span class="winner-badge ${game.winner.toLowerCase()}">${game.winner}</span>
-                </div>
-                <div class="game-timestamp">${formatTimestamp(game.timestamp)}</div>
-            </div >
-    `).join('');
-
-    } catch (error) {
-        console.error('Failed to load games:', error);
-        gamesContainer.innerHTML = '<p class="loading">Failed to load games</p>';
-    }
-}
-
-// View a specific game
-function viewGame(gameId) {
-    window.location.href = `/ viewer ? game = ${gameId} `;
-}
-
-// Format timestamp for display
 function formatTimestamp(timestamp) {
     const date = new Date(timestamp);
     return date.toLocaleString('en-US', {
@@ -521,6 +704,7 @@ function formatTimestamp(timestamp) {
         minute: '2-digit'
     });
 }
+
 function getStatusClasses(status) {
     switch (status) {
         case 'idle': return 'bg-slate-800 text-slate-400 border-slate-700';

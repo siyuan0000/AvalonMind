@@ -3,10 +3,11 @@ Avalon AI Game Web UI
 A simple Flask-based web interface for running and viewing Avalon games.
 """
 
-from flask import Flask, render_template, request, jsonify, send_file, Response
+from flask import Flask, render_template, request, jsonify, send_file, Response, session
 import os
 import json
 import subprocess
+import secrets
 from threading import Thread, Event, Lock
 from queue import Queue
 
@@ -15,12 +16,16 @@ from avalon.core.engine import AvalonGame
 from avalon.core.controller import GameController, HumanPlayer
 from avalon.ai.backends import DeepSeekAPI
 from avalon.config import config
+from avalon.services.supabase import supabase
 
 # Configure Flask to look for templates and static files in the project root
 template_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../templates'))
 static_dir = os.path.abspath(os.path.join(os.path.dirname(__file__), '../../static'))
 
 app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
+
+# Session configuration
+app.secret_key = os.environ.get('FLASK_SECRET_KEY') or secrets.token_hex(32)
 
 # Event streaming setup
 event_listeners = []
@@ -123,14 +128,8 @@ def run_game_thread(game_config):
         if not api_key:
             raise ValueError("DeepSeek API Key not found. Please check .env.local")
         
-        # Determine User Player (Player 0 - Alice)
-        user_mode = game_config.get('user_mode', 'watch') # 'play' or 'watch'
-        
-        # Player 0 (Alice) - User or AI
-        if user_mode == 'play':
-            player_ais.append(HumanPlayer(name=player_names[0]))
-        else:
-            player_ais.append(DeepSeekAPI(api_key=api_key, model='deepseek-chat'))
+        # Player 0 (Alice) - Always Human Player (removed observer mode)
+        player_ais.append(HumanPlayer(name=player_names[0]))
             
         # Players 1-5 - Fixed DeepSeek AI
         for i in range(1, 6):
@@ -159,6 +158,11 @@ def run_game_thread(game_config):
         running_game['game_id'] = controller.logger.game_log['game_id']
         running_game['log_path'] = os.path.join('logs', f"game_{running_game['game_id']}.json")
         
+        # Save game to Supabase with user_id
+        user_id = running_game.get('user_id')
+        if user_id and controller.logger.game_log:
+            supabase.save_game_log(controller.logger.game_log, user_id)
+        
     except Exception as e:
         running_game['status'] = 'error'
         running_game['error'] = str(e)
@@ -177,12 +181,26 @@ def start_game():
     """Start a new game with the provided configuration"""
     global running_game
 
-    game_config = request.json
+    # Check authentication
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({'error': 'Please login to play', 'auth_required': True}), 401
+    
+    # Check weekly play limit
+    can_play, limit_info = supabase.check_can_play(user_id)
+    if not can_play:
+        return jsonify({
+            'error': 'You have reached your weekly game limit. VIP members can play unlimited games.',
+            'weekly_limit_reached': True,
+            'weekly_count': limit_info.get('weekly_count', 1)
+        }), 403
+
+    game_config = request.json or {}
     
     if running_game['is_running']:
         return jsonify({'error': 'Game is already running'}), 400
 
-    # Reset running game state
+    # Reset running game state with user_id
     running_game = {
         'is_running': True,
         'game_id': None,
@@ -191,7 +209,8 @@ def start_game():
         'pending_input': None,
         'input_event': Event(),
         'input_response': None,
-        'current_action': ''
+        'current_action': '',
+        'user_id': user_id  # Track user for this game
     }
 
     # Start game in a separate thread
@@ -299,6 +318,153 @@ def download_log(game_id):
 def viewer():
     """Game log viewer page"""
     return render_template('viewer.html')
+
+@app.route('/record')
+def record():
+    """User game records page"""
+    return render_template('record.html')
+
+# ============== Authentication Routes ==============
+
+def get_current_user_id():
+    """Get the current user ID from session."""
+    return session.get('user_id')
+
+def get_current_user_email():
+    """Get the current user email from session."""
+    return session.get('email')
+
+@app.route('/api/auth/register', methods=['POST'])
+def auth_register():
+    """Register a new user."""
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not email or not password:
+        return jsonify({'error': 'Email and password are required'}), 400
+    
+    user, error = supabase.sign_up(email, password)
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    if user:
+        # Create user profile
+        supabase.create_user_profile(user.id, email)
+        
+        # Set session
+        session['user_id'] = user.id
+        session['email'] = email
+        
+        return jsonify({
+            'message': 'Registration successful',
+            'user': {
+                'id': user.id,
+                'email': email
+            }
+        })
+    
+    return jsonify({'error': 'Registration failed'}), 500
+
+@app.route('/api/auth/login', methods=['POST'])
+def auth_login():
+    """Login an existing user."""
+    data = request.json
+    email = data.get('email')
+    password = data.get('password')
+    
+    if not email or not password:
+        return jsonify({'error': 'Email and password are required'}), 400
+    
+    user, error = supabase.sign_in(email, password)
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    if user:
+        # Ensure user profile exists
+        profile = supabase.get_user_profile(user.id)
+        if not profile:
+            supabase.create_user_profile(user.id, email)
+        
+        # Set session
+        session['user_id'] = user.id
+        session['email'] = email
+        
+        return jsonify({
+            'message': 'Login successful',
+            'user': {
+                'id': user.id,
+                'email': email
+            }
+        })
+    
+    return jsonify({'error': 'Login failed'}), 500
+
+@app.route('/api/auth/logout', methods=['POST'])
+def auth_logout():
+    """Logout the current user."""
+    session.clear()
+    return jsonify({'message': 'Logged out successfully'})
+
+@app.route('/api/auth/me')
+def auth_me():
+    """Get current user info."""
+    user_id = get_current_user_id()
+    
+    if not user_id:
+        return jsonify({'authenticated': False})
+    
+    email = get_current_user_email()
+    profile = supabase.get_user_profile(user_id)
+    weekly_count = supabase.get_weekly_game_count(user_id)
+    
+    return jsonify({
+        'authenticated': True,
+        'user': {
+            'id': user_id,
+            'email': email,
+            'is_vip': profile.get('is_vip', False) if profile else False,
+            'weekly_games': weekly_count
+        }
+    })
+
+@app.route('/api/user_games')
+def get_user_games():
+    """Get game logs for the current user."""
+    user_id = get_current_user_id()
+    
+    if not user_id:
+        return jsonify({'error': 'Not authenticated'}), 401
+    
+    limit = request.args.get('limit', 50, type=int)
+    offset = request.args.get('offset', 0, type=int)
+    
+    games = supabase.get_user_game_logs(user_id, limit, offset)
+    
+    # Extract summary info from each game
+    game_summaries = []
+    for game in games:
+        log_data = game.get('log_data', {})
+        
+        # Find user's role (Alice is player 0)
+        user_role = None
+        players = log_data.get('players', [])
+        for player in players:
+            if player.get('name') == 'Alice':
+                user_role = player.get('role')
+                break
+        
+        game_summaries.append({
+            'game_id': game.get('game_id'),
+            'timestamp': game.get('timestamp'),
+            'winner': game.get('winner'),
+            'user_role': user_role,
+            'has_ai_reasoning': bool(log_data.get('rounds'))
+        })
+    
+    return jsonify({'games': game_summaries})
 
 @app.route('/api/check_ollama')
 def check_ollama():

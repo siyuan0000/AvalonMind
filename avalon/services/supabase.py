@@ -2,6 +2,7 @@ import os
 from supabase import create_client, Client
 from pathlib import Path
 import json
+from datetime import datetime, timedelta
 
 class SupabaseClient:
     _instance = None
@@ -33,8 +34,8 @@ class SupabaseClient:
             
         self._initialized = True
 
-    def save_game_log(self, log_data):
-        """Save game log to Supabase."""
+    def save_game_log(self, log_data, user_id=None):
+        """Save game log to Supabase with optional user association."""
         if not self.client:
             return False
 
@@ -45,6 +46,9 @@ class SupabaseClient:
                 'winner': log_data.get('final_result', {}).get('winner', 'Unknown'),
                 'log_data': log_data
             }
+            
+            if user_id:
+                data['user_id'] = user_id
             
             self.client.table('game_logs').upsert(data).execute()
             print(f"[Supabase] Game {log_data['game_id']} saved successfully.")
@@ -112,6 +116,102 @@ class SupabaseClient:
             return res.user, None
         except Exception as e:
             return None, str(e)
+
+    def get_user_profile(self, user_id):
+        """Get user profile including VIP status."""
+        if not self.client:
+            return None
+        try:
+            response = self.client.table('user_profiles')\
+                .select('*')\
+                .eq('user_id', user_id)\
+                .execute()
+            
+            if response.data and len(response.data) > 0:
+                return response.data[0]
+            return None
+        except Exception as e:
+            print(f"[Supabase] Failed to get user profile: {e}")
+            return None
+
+    def create_user_profile(self, user_id, email):
+        """Create a new user profile."""
+        if not self.client:
+            return False
+        try:
+            data = {
+                'user_id': user_id,
+                'email': email,
+                'is_vip': False
+            }
+            self.client.table('user_profiles').insert(data).execute()
+            print(f"[Supabase] User profile created for {email}")
+            return True
+        except Exception as e:
+            print(f"[Supabase] Failed to create user profile: {e}")
+            return False
+
+    def get_weekly_game_count(self, user_id):
+        """Get the number of games played this week by a user."""
+        if not self.client:
+            return 0
+        try:
+            # Calculate the start of the current week (Monday 00:00 UTC)
+            today = datetime.utcnow()
+            days_since_monday = today.weekday()
+            week_start = (today - timedelta(days=days_since_monday)).replace(
+                hour=0, minute=0, second=0, microsecond=0
+            )
+            week_start_iso = week_start.isoformat()
+            
+            response = self.client.table('game_logs')\
+                .select('game_id', count='exact')\
+                .eq('user_id', user_id)\
+                .gte('timestamp', week_start_iso)\
+                .execute()
+            
+            return response.count if response.count else 0
+        except Exception as e:
+            print(f"[Supabase] Failed to get weekly game count: {e}")
+            return 0
+
+    def get_user_game_logs(self, user_id, limit=50, offset=0):
+        """Fetch game logs for a specific user."""
+        if not self.client:
+            return []
+        try:
+            response = self.client.table('game_logs')\
+                .select('game_id, timestamp, winner, log_data')\
+                .eq('user_id', user_id)\
+                .order('timestamp', desc=True)\
+                .range(offset, offset + limit - 1)\
+                .execute()
+            return response.data
+        except Exception as e:
+            print(f"[Supabase] Failed to fetch user game logs: {e}")
+            return []
+
+    def check_can_play(self, user_id):
+        """Check if user can play a game (VIP or under weekly limit)."""
+        if not self.client:
+            return True, None  # Allow if Supabase is not configured
+        
+        profile = self.get_user_profile(user_id)
+        
+        # If no profile exists, create one
+        if not profile:
+            return True, None  # New users can play
+        
+        # VIP users have unlimited games
+        if profile.get('is_vip', False):
+            return True, {'is_vip': True, 'weekly_count': None}
+        
+        # Check weekly limit
+        weekly_count = self.get_weekly_game_count(user_id)
+        if weekly_count >= 1:
+            return False, {'is_vip': False, 'weekly_count': weekly_count}
+        
+        return True, {'is_vip': False, 'weekly_count': weekly_count}
 
     def update_token_usage(self, user_id, tokens_used, model='deepseek-chat'):
         """Update token usage for a user."""
