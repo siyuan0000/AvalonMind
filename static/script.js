@@ -714,6 +714,15 @@ function submitTeamProposal(teamSize) {
         return;
     }
     const selected = Array.from(checkboxes).map(cb => cb.value);
+    
+    // Disable the button to prevent double submission
+    const button = document.querySelector('button[onclick^="submitTeamProposal"]');
+    if (button) {
+        button.disabled = true;
+        button.textContent = 'Submitting...';
+        button.classList.add('opacity-50', 'cursor-not-allowed');
+    }
+    
     submitAction(selected.join(', '));
 }
 
@@ -760,62 +769,41 @@ function updateSeatingChart(gameStatus, currentAction = '') {
     switch (gameStatus) {
         case 'idle':
             phaseElement.textContent = 'Waiting to start';
-            phaseElement.className = 'text-amber-400 font-medium';
+            phaseElement.className = 'text-amber-400 font-medium text-xs';
             break;
         case 'starting':
         case 'initializing':
             phaseElement.textContent = 'Game Starting...';
-            phaseElement.className = 'text-amber-400 font-medium animate-pulse';
+            phaseElement.className = 'text-amber-400 font-medium text-xs animate-pulse';
             break;
         case 'running':
             phaseElement.textContent = currentAction || 'Game in Progress';
-            phaseElement.className = 'text-indigo-400 font-medium';
+            phaseElement.className = 'text-indigo-400 font-medium text-xs';
             break;
         case 'completed':
             phaseElement.textContent = 'Game Completed!';
-            phaseElement.className = 'text-emerald-400 font-medium';
+            phaseElement.className = 'text-emerald-400 font-medium text-xs';
             break;
         case 'error':
             phaseElement.textContent = 'Error Occurred';
-            phaseElement.className = 'text-red-400 font-medium';
+            phaseElement.className = 'text-red-400 font-medium text-xs';
             break;
         default:
             phaseElement.textContent = 'Unknown';
-            phaseElement.className = 'text-slate-400 font-medium';
+            phaseElement.className = 'text-slate-400 font-medium text-xs';
     }
     
-    // Update player indicators based on game state
-    const seatElements = [
-        document.getElementById('seat1'),
-        document.getElementById('seat2'),
-        document.getElementById('seat3'),
-        document.getElementById('seat4'),
-        document.getElementById('seat5'),
-        document.getElementById('seat6')
-    ];
-    
-    // Reset all seats to default state
-    seatElements.forEach((seat, index) => {
-        if (seat) {
-            const parent = seat.parentElement;
-            if (parent) {
-                if (index === 0) {
-                    // Player 1 (Human) - special styling
-                    parent.className = 'absolute top-0 left-1/2 -translate-x-1/2 w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg border-2 border-indigo-300';
-                } else {
-                    // AI players
-                    parent.className = 'absolute w-12 h-12 rounded-full bg-slate-700 flex items-center justify-center border-2 border-slate-600';
-                }
-            }
-        }
-    });
-    
-    // Add active indicators based on game status
-    if (gameStatus === 'running' || gameStatus === 'starting' || gameStatus === 'initializing') {
-        // Add active indicator to Player 1 (you)
-        const player1Indicator = document.querySelector('#seat1').parentElement.querySelector('div:last-child');
-        if (player1Indicator) {
-            player1Indicator.className = 'absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border border-white animate-pulse';
+    // Update player indicator based on game state
+    const playerIndicator = document.getElementById('playerIndicator');
+    if (playerIndicator) {
+        if (gameStatus === 'running' || gameStatus === 'starting' || gameStatus === 'initializing') {
+            // Show active indicator for Player 1 (you)
+            playerIndicator.classList.remove('opacity-0');
+            playerIndicator.classList.add('animate-pulse');
+        } else {
+            // Hide indicator
+            playerIndicator.classList.add('opacity-0');
+            playerIndicator.classList.remove('animate-pulse');
         }
     }
 }
