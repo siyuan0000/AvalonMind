@@ -11,7 +11,26 @@ let gameStarted = false;  // Track if game has started
 document.addEventListener('DOMContentLoaded', function () {
     checkAuthStatus();
     startStatusPolling();
+    // Initialize role info display
+    initializeRoleInfo();
 });
+
+// Initialize role info display
+async function initializeRoleInfo() {
+    try {
+        // Try to get current game status to see if there's an active game
+        const response = await fetch('/api/game_status');
+        if (response.ok) {
+            const gameStatus = await response.json();
+            if (gameStatus.status === 'running' && gameStatus.game_id) {
+                // Game is running, fetch role info
+                await fetchPlayerRole();
+            }
+        }
+    } catch (error) {
+        console.log('No active game found, using default role display');
+    }
+}
 
 // ============== Authentication ==============
 
@@ -811,18 +830,61 @@ function updateSeatingChart(gameStatus, currentAction = '') {
 // Fetch and display player role when game starts
 async function fetchPlayerRole() {
     try {
-        // In a real implementation, this would fetch the actual role from the game state
-        // For now, we'll simulate it
-        currentPlayerRole = 'Merlin'; // Default role
+        // Fetch actual game data to get player role
+        const response = await fetch('/api/game_status');
+        const gameStatus = await response.json();
         
-        // Update player name display with role
-        const playerNameElement = document.getElementById('playerName');
-        if (playerNameElement) {
-            playerNameElement.textContent = `Alice (${currentPlayerRole})`;
+        if (gameStatus.log_path) {
+            // Fetch the game log to get role information
+            const logResponse = await fetch(`/api/log/${gameStatus.game_id}`);
+            if (logResponse.ok) {
+                const logData = await logResponse.json();
+                
+                // Find Alice's role in the player list
+                const players = logData.players || [];
+                const alice = players.find(p => p.name === 'Alice');
+                
+                if (alice) {
+                    currentPlayerRole = alice.role;
+                    
+                    // Update player name display with role
+                    const playerNameElement = document.getElementById('playerName');
+                    if (playerNameElement) {
+                        playerNameElement.textContent = `Alice (${currentPlayerRole})`;
+                    }
+                    
+                    // Update role info text with detailed information
+                    const roleInfoElement = document.getElementById('roleInfoText');
+                    if (roleInfoElement) {
+                        let roleDescription = `You are Alice. You are ${currentPlayerRole}.`;
+                        
+                        // Add role-specific information
+                        if (currentPlayerRole === 'Merlin') {
+                            // Find evil players
+                            const evilPlayers = players.filter(p => p.is_evil).map(p => p.name);
+                            roleDescription += ` You see the following Evil players: ${JSON.stringify(evilPlayers)}`;
+                        } else if (currentPlayerRole === 'Percival') {
+                            // Find Merlin and Morgana
+                            const merlinMorgana = players.filter(p => p.role === 'Merlin' || p.role === 'Morgana').map(p => p.name);
+                            roleDescription += ` You see these as possible Merlins: ${JSON.stringify(merlinMorgana)}`;
+                        } else if (currentPlayerRole === 'Loyal Servant') {
+                            roleDescription += ` You have no special information.`;
+                        } else if (alice.is_evil) {
+                            // Evil roles
+                            const evilTeammates = players.filter(p => p.is_evil && p.name !== 'Alice').map(p => p.name);
+                            roleDescription += ` Your evil teammates are: ${JSON.stringify(evilTeammates)}`;
+                        }
+                        
+                        roleInfoElement.textContent = roleDescription;
+                    }
+                    
+                    console.log(`[INFO] Player role: ${currentPlayerRole}`);
+                }
+            }
         }
-        
-        console.log(`[INFO] Player role: ${currentPlayerRole}`);
     } catch (error) {
         console.error('Failed to fetch player role:', error);
+        // Fallback to default
+        currentPlayerRole = 'Merlin';
     }
 }
