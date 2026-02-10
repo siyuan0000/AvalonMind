@@ -38,7 +38,7 @@ async function checkAuthStatus() {
     try {
         const response = await fetch('/api/auth/me');
         const data = await response.json();
-        
+
         if (data.authenticated) {
             currentUser = data.user;
             updateUIForLoggedInUser(data.user);
@@ -60,7 +60,7 @@ function updateUIForLoggedInUser(user) {
         navEmail.textContent = user.email.split('@')[0];
         navEmail.classList.remove('hidden');
     }
-    
+
     // Update weekly games info
     const weeklyInfo = document.getElementById('weeklyGamesInfo');
     const weeklyText = document.getElementById('weeklyGamesText');
@@ -72,15 +72,15 @@ function updateUIForLoggedInUser(user) {
             weeklyText.textContent = `Games this week: ${user.weekly_games}/1`;
         }
     }
-    
+
     // Update modal user info
     document.getElementById('authForm').classList.add('hidden');
     document.getElementById('userInfo').classList.remove('hidden');
     document.getElementById('userEmail').textContent = user.email;
-    
+
     const vipBadge = document.getElementById('vipBadge');
     const userWeeklyGames = document.getElementById('userWeeklyGames');
-    
+
     if (user.is_vip) {
         vipBadge.classList.remove('hidden');
         userWeeklyGames.textContent = 'Unlimited games';
@@ -96,13 +96,13 @@ function updateUIForLoggedOutUser() {
     if (navEmail) {
         navEmail.classList.add('hidden');
     }
-    
+
     // Hide weekly games info
     const weeklyInfo = document.getElementById('weeklyGamesInfo');
     if (weeklyInfo) {
         weeklyInfo.classList.add('hidden');
     }
-    
+
     // Update modal
     document.getElementById('authForm').classList.remove('hidden');
     document.getElementById('userInfo').classList.add('hidden');
@@ -118,7 +118,7 @@ function closeSettingsModal() {
 }
 
 // Close modal when clicking outside
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     const modal = document.getElementById('settingsModal');
     if (e.target === modal) {
         closeSettingsModal();
@@ -129,22 +129,22 @@ async function handleLogin() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
     const errorEl = document.getElementById('authError');
-    
+
     if (!email || !password) {
         errorEl.textContent = 'Please enter email and password';
         errorEl.classList.remove('hidden');
         return;
     }
-    
+
     try {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             errorEl.classList.add('hidden');
             await checkAuthStatus();
@@ -163,28 +163,28 @@ async function handleRegister() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
     const errorEl = document.getElementById('authError');
-    
+
     if (!email || !password) {
         errorEl.textContent = 'Please enter email and password';
         errorEl.classList.remove('hidden');
         return;
     }
-    
+
     if (password.length < 6) {
         errorEl.textContent = 'Password must be at least 6 characters';
         errorEl.classList.remove('hidden');
         return;
     }
-    
+
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             errorEl.classList.add('hidden');
             await checkAuthStatus();
@@ -245,7 +245,7 @@ async function startGame() {
                 statusInterval = setInterval(updateGameStatus, 1000);
             }
             connectToStream();
-            
+
             // Fetch player role when game starts
             setTimeout(fetchPlayerRole, 1000);
         } else if (response.status === 401) {
@@ -385,7 +385,7 @@ function updateSuspicionHeatmap(observer, scores) {
         let textColorClass = 'text-emerald-400';
         let bgColorClass = 'bg-emerald-500/10';
         let borderColorClass = 'border-emerald-500/30';
-        
+
         if (score > 70) {
             barColorClass = 'from-red-500 to-red-400';
             textColorClass = 'text-red-400';
@@ -498,6 +498,19 @@ async function updateGameStatus() {
             actionText.style.display = 'none';
         }
 
+        // Toggle Role Info Visibility
+        const roleInfoContainer = document.getElementById('roleInfoContainer');
+        if (status.status === 'running' || status.status === 'starting' || status.status === 'initializing') {
+            if (roleInfoContainer.classList.contains('hidden')) {
+                roleInfoContainer.classList.remove('hidden');
+                roleInfoContainer.classList.add('animate-pulse-glow');
+                // Remove animation after a few seconds
+                setTimeout(() => roleInfoContainer.classList.remove('animate-pulse-glow'), 3000);
+            }
+        } else if (status.status === 'idle') {
+            roleInfoContainer.classList.add('hidden');
+        }
+
         // Update message
         if (status.status === 'idle') {
             if (statusMessage) statusMessage.textContent = 'Ready to start a new game';
@@ -514,7 +527,7 @@ async function updateGameStatus() {
             }
             document.getElementById('stopButton').classList.add('hidden');
             document.getElementById('stopButton').disabled = false;
-            
+
             // Reset game state
             gameStarted = false;
             updateSeatingChart('idle');
@@ -522,14 +535,14 @@ async function updateGameStatus() {
             if (statusMessage) statusMessage.textContent = 'Game is starting...';
             document.getElementById('interactionCard').style.display = 'none';
             document.getElementById('stopButton').classList.remove('hidden');
-            
+
             // Game is starting
             gameStarted = true;
             updateSeatingChart('starting');
         } else if (status.status === 'running') {
             if (statusMessage) statusMessage.textContent = 'Game is running...';
             document.getElementById('stopButton').classList.remove('hidden');
-            
+
             // Game is running
             gameStarted = true;
             updateSeatingChart('running', status.current_action);
@@ -537,10 +550,10 @@ async function updateGameStatus() {
             // Check for pending input - only re-render if input type/data has changed
             if (status.pending_input) {
                 // Compare with last pending input to avoid unnecessary re-renders
-                const shouldRender = !lastPendingInput || 
-                                   lastPendingInput.type !== status.pending_input.type ||
-                                   JSON.stringify(lastPendingInput.data) !== JSON.stringify(status.pending_input.data);
-                            
+                const shouldRender = !lastPendingInput ||
+                    lastPendingInput.type !== status.pending_input.type ||
+                    JSON.stringify(lastPendingInput.data) !== JSON.stringify(status.pending_input.data);
+
                 if (shouldRender) {
                     showInputForm(status.pending_input);
                     lastPendingInput = status.pending_input;
@@ -564,10 +577,10 @@ async function updateGameStatus() {
                 eventSource = null;
             }
             document.getElementById('stopButton').classList.add('hidden');
-            
+
             // Game completed
             updateSeatingChart('completed');
-            
+
             // Refresh auth status to update weekly count
             checkAuthStatus();
         } else if (status.status === 'error') {
@@ -584,10 +597,13 @@ async function updateGameStatus() {
                 eventSource = null;
             }
             document.getElementById('stopButton').classList.add('hidden');
-            
+
             // Show error in seating chart
             updateSeatingChart('error');
         }
+
+        // Update Visual Tracks
+        updateGameTracks(status);
 
     } catch (error) {
         console.error('Failed to update status:', error);
@@ -733,7 +749,7 @@ function submitTeamProposal(teamSize) {
         return;
     }
     const selected = Array.from(checkboxes).map(cb => cb.value);
-    
+
     // Disable the button to prevent double submission
     const button = document.querySelector('button[onclick^="submitTeamProposal"]');
     if (button) {
@@ -741,7 +757,7 @@ function submitTeamProposal(teamSize) {
         button.textContent = 'Submitting...';
         button.classList.add('opacity-50', 'cursor-not-allowed');
     }
-    
+
     submitAction(selected.join(', '));
 }
 
@@ -779,52 +795,212 @@ function getStatusClasses(status) {
     }
 }
 
+
 // ============== Seating Chart Functions ==============
 
 function updateSeatingChart(gameStatus, currentAction = '') {
     const phaseElement = document.getElementById('currentPhase');
-    
+
     // Update phase text
-    switch (gameStatus) {
-        case 'idle':
-            phaseElement.textContent = 'Waiting to start';
-            phaseElement.className = 'text-amber-400 font-medium text-xs';
-            break;
-        case 'starting':
-        case 'initializing':
-            phaseElement.textContent = 'Game Starting...';
-            phaseElement.className = 'text-amber-400 font-medium text-xs animate-pulse';
-            break;
-        case 'running':
-            phaseElement.textContent = currentAction || 'Game in Progress';
-            phaseElement.className = 'text-indigo-400 font-medium text-xs';
-            break;
-        case 'completed':
-            phaseElement.textContent = 'Game Completed!';
-            phaseElement.className = 'text-emerald-400 font-medium text-xs';
-            break;
-        case 'error':
-            phaseElement.textContent = 'Error Occurred';
-            phaseElement.className = 'text-red-400 font-medium text-xs';
-            break;
-        default:
-            phaseElement.textContent = 'Unknown';
-            phaseElement.className = 'text-slate-400 font-medium text-xs';
-    }
-    
-    // Update player indicator based on game state
-    const playerIndicator = document.getElementById('playerIndicator');
-    if (playerIndicator) {
-        if (gameStatus === 'running' || gameStatus === 'starting' || gameStatus === 'initializing') {
-            // Show active indicator for Player 1 (you)
-            playerIndicator.classList.remove('opacity-0');
-            playerIndicator.classList.add('animate-pulse');
-        } else {
-            // Hide indicator
-            playerIndicator.classList.add('opacity-0');
-            playerIndicator.classList.remove('animate-pulse');
+    if (phaseElement) {
+        switch (gameStatus) {
+            case 'idle':
+                phaseElement.textContent = 'Waiting to start';
+                phaseElement.className = 'text-slate-500 font-medium text-xs';
+                break;
+            case 'starting':
+            case 'initializing':
+                phaseElement.textContent = 'Game Starting...';
+                phaseElement.className = 'text-warning-400 font-medium text-xs animate-pulse';
+                break;
+            case 'running':
+                phaseElement.textContent = currentAction || 'Game in Progress';
+                phaseElement.className = 'text-primary-400 font-medium text-xs';
+                break;
+            case 'completed':
+                phaseElement.textContent = 'Game Over';
+                phaseElement.className = 'text-success-400 font-bold text-xs';
+                break;
+            case 'error':
+                phaseElement.textContent = 'Error';
+                phaseElement.className = 'text-error-400 font-bold text-xs';
+                break;
+            default:
+                phaseElement.textContent = gameStatus;
+                phaseElement.className = 'text-slate-400 font-medium text-xs';
         }
     }
+
+    const container = document.getElementById('playersContainer');
+    if (!container) return;
+
+    // Hardcoded player names for now (should be dynamic if API provides them)
+    // Assuming standard 6 player game for now as per previous code
+    const players = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank'];
+    const radius = 120; // px
+    // Use offsetWidth/Height to get actual dimensions, fallback to 320 (container size)
+    const centerX = container.offsetWidth / 2 || 160;
+    const centerY = container.offsetHeight / 2 || 160;
+
+    // Reuse existing slots if they exist to preserve animations
+    let playerSlots = container.querySelectorAll('.player-slot');
+    if (playerSlots.length === 0) {
+        container.innerHTML = '';
+
+        // Rectangular Layout Logic (1x2 Aspect Ratio) with Numbering
+        // Table dimensions (visual): ~320px W x 160px H
+        // Container center: centerX, centerY
+
+        // Seat Assignments (Clockwise/Counter-clockwise as needed, or fixed relative)
+        // Let's assume a standard "Poker" style distribution for 6 players
+        // 1: Bottom Right (User / P1)
+        // 2: Bottom Left (P2)
+        // 3: Left (P3)
+        // 4: Top Left (P4)
+        // 5: Top Right (P5)
+        // 6: Right (P6)
+
+        const tableHalfW = 140; // width/2 + padding
+        const tableHalfH = 90;  // height/2 + padding
+
+        players.forEach((player, index) => {
+            let left, top;
+            let seatNumber = index + 1; // 1-based index
+
+            // Calculate position based on index (0-5)
+            // 0 -> Seat 1 (Bottom Right)
+            // 1 -> Seat 2 (Bottom Left)
+            // 2 -> Seat 3 (Left)
+            // 3 -> Seat 4 (Top Left)
+            // 4 -> Seat 5 (Top Right)
+            // 5 -> Seat 6 (Right)
+
+            switch (index) {
+                case 0: // Seat 1: Bottom Right
+                    left = centerX + 60;
+                    top = centerY + tableHalfH;
+                    break;
+                case 1: // Seat 2: Bottom Left
+                    left = centerX - 60;
+                    top = centerY + tableHalfH;
+                    break;
+                case 2: // Seat 3: Left
+                    left = centerX - tableHalfW - 20;
+                    top = centerY;
+                    break;
+                case 3: // Seat 4: Top Left
+                    left = centerX - 60;
+                    top = centerY - tableHalfH;
+                    break;
+                case 4: // Seat 5: Top Right
+                    left = centerX + 60;
+                    top = centerY - tableHalfH;
+                    break;
+                case 5: // Seat 6: Right
+                    left = centerX + tableHalfW + 20;
+                    top = centerY;
+                    break;
+                default:
+                    left = centerX;
+                    top = centerY;
+            }
+
+            // Adjust to center the slot itself (40px half-width/height)
+            left -= 40;
+            top -= 40;
+
+            const slot = document.createElement('div');
+            slot.className = 'player-slot';
+            slot.style.left = `${left}px`;
+            slot.style.top = `${top}px`;
+            slot.dataset.player = player;
+            // Add seat number badge
+            slot.innerHTML = `
+                <div class="seat-badge absolute -top-2 -left-2 w-6 h-6 bg-slate-700 text-slate-300 rounded-full flex items-center justify-center text-xs font-bold border border-slate-600 z-30 shadow-md transform transition-all">
+                    ${seatNumber}
+                </div>
+                <div class="player-avatar transition-all duration-300">
+                   ${player.charAt(0)}
+                </div>
+                <div class="player-name mt-1 text-xs font-medium text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700/50 backdrop-blur-sm shadow-sm transition-colors">${player}</div>
+                <div class="player-action"></div>
+            `;
+            container.appendChild(slot);
+        });
+        playerSlots = container.querySelectorAll('.player-slot');
+    }
+
+    // Update state of each slot based on game events
+    playerSlots.forEach(slot => {
+        const playerName = slot.dataset.player;
+        const avatar = slot.querySelector('.player-avatar');
+        const nameLabel = slot.querySelector('.player-name');
+
+        // Remove old indicators
+        const existingCrown = slot.querySelector('.leader-crown');
+        if (existingCrown) existingCrown.remove();
+
+        // Reset dynamic visual states
+        avatar.style.transform = 'scale(1)';
+        avatar.style.boxShadow = 'none';
+        avatar.parentElement.style.zIndex = '20';
+        nameLabel.style.color = '#94a3b8'; // slate-400
+        nameLabel.style.borderColor = 'rgba(51, 65, 85, 0.5)'; // slate-700/50
+        nameLabel.style.backgroundColor = 'rgba(15, 23, 42, 0.8)'; // slate-900/80
+
+        // 1. Highlight Leader
+        if (gameStatus === 'running' && status.current_leader === playerName) {
+            // Add Crown Icon
+            const crown = document.createElement('div');
+            crown.className = 'leader-crown absolute -top-6 left-1/2 -translate-x-1/2 text-amber-400 text-lg animate-bounce';
+            crown.innerHTML = '👑';
+            slot.appendChild(crown);
+
+            // Gold Border
+            avatar.style.borderColor = '#fbbf24'; // amber-400
+            nameLabel.style.color = '#fbbf24';
+        }
+
+        // 2. Highlight Active Speaker / Actor
+        let isActive = false;
+
+        if (gameStatus === 'running' && status.current_action) {
+            const action = status.current_action;
+
+            // Discussion: "Discussion: Alice is speaking..."
+            if (action.includes(`Discussion: ${playerName} is speaking`)) {
+                isActive = true;
+            }
+            // Leader Opening: "Discussion Phase: Leader Bob opens the floor"
+            else if (action.includes(`Leader ${playerName} opens the floor`)) {
+                isActive = true;
+            }
+            // Assassin: "Assassination Phase: Assassin is choosing..." (Only if we know who?)
+            // We shouldn't reveal Assassin to others. But if "Alice" is the user and is Assassin...
+            // For now, let's just stick to public info.
+        }
+
+        if (isActive) {
+            // Speaking: Indigo Glow & Pulse
+            avatar.style.transform = 'scale(1.2)';
+            avatar.parentElement.style.zIndex = '30';
+            avatar.style.borderColor = '#818cf8'; // indigo-400
+            avatar.style.boxShadow = '0 0 20px rgba(99, 102, 241, 0.6)';
+
+            nameLabel.style.color = '#fff';
+            nameLabel.style.borderColor = '#6366f1';
+            nameLabel.style.backgroundColor = 'rgba(99, 102, 241, 0.4)';
+            nameLabel.textContent = `${playerName} 💬`;
+        } else {
+            // Reset text (remove emoji if present)
+            nameLabel.textContent = playerName;
+        }
+
+        // Highlight Alice (Self) - Always subtle indicator
+        if (playerName === 'Alice') {
+            avatar.style.boxShadow = isActive ? avatar.style.boxShadow : '0 0 0 2px rgba(99, 102, 241, 0.3)';
+        }
+    });
 }
 
 // Fetch and display player role when game starts
@@ -833,31 +1009,54 @@ async function fetchPlayerRole() {
         // Fetch actual game data to get player role
         const response = await fetch('/api/game_status');
         const gameStatus = await response.json();
-        
+
+        // 1. Try to get role from direct game state (preferred)
+        if (gameStatus.player_roles && gameStatus.player_roles['Alice']) {
+            const alice = gameStatus.player_roles['Alice'];
+            currentPlayerRole = alice.role;
+
+            // Update player name display with role
+            const playerNameElement = document.getElementById('playerName');
+            if (playerNameElement) {
+                playerNameElement.textContent = `Alice (${currentPlayerRole})`;
+            }
+
+            // Update role info text with detailed information from backend
+            const roleInfoElement = document.getElementById('roleInfoText');
+            if (roleInfoElement) {
+                roleInfoElement.textContent = alice.description;
+                // Remove placeholder styling if any
+                roleInfoElement.classList.remove('italic', 'text-slate-500');
+                roleInfoElement.classList.add('text-slate-300');
+            }
+            return;
+        }
+
+        // 2. Fallback: Fetch from log file (legacy method)
         if (gameStatus.log_path) {
             // Fetch the game log to get role information
             const logResponse = await fetch(`/api/log/${gameStatus.game_id}`);
             if (logResponse.ok) {
                 const logData = await logResponse.json();
-                
+
                 // Find Alice's role in the player list
                 const players = logData.players || [];
                 const alice = players.find(p => p.name === 'Alice');
-                
+
                 if (alice) {
                     currentPlayerRole = alice.role;
-                    
+
                     // Update player name display with role
                     const playerNameElement = document.getElementById('playerName');
                     if (playerNameElement) {
                         playerNameElement.textContent = `Alice (${currentPlayerRole})`;
                     }
-                    
+
                     // Update role info text with detailed information
                     const roleInfoElement = document.getElementById('roleInfoText');
                     if (roleInfoElement) {
                         let roleDescription = `You are Alice. You are ${currentPlayerRole}.`;
-                        
+
                         // Add role-specific information
                         if (currentPlayerRole === 'Merlin') {
                             // Find evil players
@@ -874,17 +1073,84 @@ async function fetchPlayerRole() {
                             const evilTeammates = players.filter(p => p.is_evil && p.name !== 'Alice').map(p => p.name);
                             roleDescription += ` Your evil teammates are: ${JSON.stringify(evilTeammates)}`;
                         }
-                        
+
                         roleInfoElement.textContent = roleDescription;
                     }
-                    
+
                     console.log(`[INFO] Player role: ${currentPlayerRole}`);
                 }
             }
         }
     } catch (error) {
-        console.error('Failed to fetch player role:', error);
-        // Fallback to default
-        currentPlayerRole = 'Merlin';
+        console.error('Error fetching player role:', error);
     }
+}
+
+// ============== Visual Tracks ==============
+
+function updateGameTracks(status) {
+    const questTrack = document.getElementById('questTrack');
+    const voteTrack = document.getElementById('voteTrack');
+
+    if (!questTrack || !voteTrack) return;
+
+    // Quest Track
+    // Hardcoded config for 6 players: [2, 3, 4, 3, 4]
+    const teamSizes = [2, 3, 4, 3, 4];
+    let questHtml = '';
+
+    teamSizes.forEach((size, index) => {
+        let stateClass = 'bg-slate-800 border-slate-600 text-slate-500';
+
+        if (status.status === 'idle') {
+            // Reset state
+        } else if (index < status.current_round) {
+            // Completed
+            if (status.mission_results && status.mission_results[index]) {
+                // Success
+                stateClass = 'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)]';
+            } else {
+                // Fail
+                stateClass = 'bg-red-600 border-red-400 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]';
+            }
+        } else if (index === status.current_round && status.status !== 'completed') {
+            // Current
+            stateClass = 'bg-amber-600 border-amber-400 text-white scale-110 shadow-[0_0_15px_rgba(245,158,11,0.6)] animate-pulse';
+        }
+
+        questHtml += `
+            <div class="flex flex-col items-center gap-1 transition-all duration-300">
+                 <div class="w-10 h-10 rounded-full border-2 flex items-center justify-center text-lg font-bold ${stateClass}">
+                    ${size}
+                 </div>
+                 <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Q${index + 1}</span>
+            </div>
+        `;
+    });
+    questTrack.innerHTML = questHtml;
+
+    // Vote Track
+    let voteHtml = '<div class="absolute h-0.5 bg-slate-700 w-full top-1/2 -z-10"></div>';
+
+    for (let i = 0; i < 5; i++) {
+        let circleClass = 'bg-slate-800 border-slate-600 text-slate-500';
+        let sizeClass = 'w-3 h-3';
+        let textContent = '';
+
+        if (status.status !== 'idle') {
+            if (i === status.rejection_count) {
+                circleClass = 'bg-indigo-500 border-indigo-400 text-white scale-125 shadow-[0_0_10px_rgba(99,102,241,0.5)] z-10';
+                sizeClass = 'w-6 h-6';
+                textContent = i + 1;
+            } else if (i < status.rejection_count) {
+                circleClass = 'bg-slate-600 border-slate-500 z-10';
+            } else {
+                circleClass = 'bg-slate-800 border-slate-700 z-10';
+            }
+        }
+
+        voteHtml += `<div class="${sizeClass} rounded-full border flex items-center justify-center text-xs font-bold transition-all duration-300 ${circleClass}">${textContent}</div>`;
+    }
+
+    voteTrack.innerHTML = voteHtml;
 }

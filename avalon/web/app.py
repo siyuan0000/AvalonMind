@@ -53,7 +53,8 @@ running_game = {
     'pending_input': None,  # {player, type, data}
     'input_event': Event(),
     'input_response': None,
-    'current_action': ''
+    'current_action': '',
+    'player_roles': None  # {player_name: role, ...}
 }
 
 # Track current game controller instance
@@ -141,6 +142,19 @@ def run_game_thread(game_config):
         
         global current_controller
         current_controller = controller
+        
+        # Expose game_id and log_path immediately so frontend can fetch logs
+        running_game['game_id'] = controller.logger.game_log['game_id']
+        running_game['log_path'] = os.path.join('logs', f"game_{running_game['game_id']}.json")
+        
+        # Expose player roles directly for UI
+        running_game['player_roles'] = {
+            p.name: {
+                'role': p.role,
+                'is_evil': p.is_evil,
+                'description': game.get_role_visibility(p)
+            } for p in game.players
+        }
         
         # Set input handler for human players
         controller.set_input_handler(handle_human_input)
@@ -243,6 +257,15 @@ def game_status():
         if 'input_event' in status_copy:
             del status_copy['input_event']
         
+        # Update with live game state if running
+        if current_controller and current_controller.game:
+            status_copy.update({
+                'mission_results': current_controller.game.mission_results,
+                'rejection_count': current_controller.game.rejection_count,
+                'current_round': current_controller.game.current_round,
+                'current_leader': current_controller.game.get_current_leader().name
+            })
+
         # Ensure all values are JSON serializable
         for key, value in status_copy.items():
             if hasattr(value, '__dict__') or callable(value):

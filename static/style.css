@@ -1,18 +1,36 @@
 /* Avalon AI Game Web UI - Stylesheet */
 
 :root {
-    /* Color Palette */
-    --primary-color: #2563eb;
-    --primary-hover: #1d4ed8;
-    --secondary-color: #64748b;
+    /* Enterprise Dark Palette */
+    --primary-color: #6366f1;
+    /* Indigo 500 */
+    --primary-hover: #4f46e5;
+    /* Indigo 600 */
+    --secondary-color: #94a3b8;
+    /* Slate 400 */
     --success-color: #10b981;
+    /* Emerald 500 */
     --error-color: #ef4444;
+    /* Red 500 */
     --warning-color: #f59e0b;
-    --background: #f8fafc;
-    --card-bg: #ffffff;
-    --text-primary: #1e293b;
-    --text-secondary: #64748b;
-    --border-color: #e2e8f0;
+    /* Amber 500 */
+
+    --background: #0f172a;
+    /* Slate 900 */
+    --surface-1: #1e293b;
+    /* Slate 800 */
+    --surface-2: #334155;
+    /* Slate 700 */
+
+    --text-primary: #f8fafc;
+    /* Slate 50 */
+    --text-secondary: #cbd5e1;
+    /* Slate 300 */
+    --text-tertiary: #94a3b8;
+    /* Slate 400 */
+
+    --border-color: #334155;
+    /* Slate 700 */
 
     /* Spacing */
     --spacing-xs: 0.5rem;
@@ -25,11 +43,13 @@
     --radius-sm: 0.375rem;
     --radius-md: 0.5rem;
     --radius-lg: 0.75rem;
+    --radius-full: 9999px;
 
     /* Shadows */
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.3);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    --shadow-glow: 0 0 15px rgba(99, 102, 241, 0.15);
 }
 
 /* Reset and Base Styles */
@@ -40,17 +60,11 @@
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
     background-color: var(--background);
     color: var(--text-primary);
     line-height: 1.6;
-}
-
-/* Container */
-.container {
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: var(--spacing-xl);
+    -webkit-font-smoothing: antialiased;
 }
 
 /* Header */
@@ -58,7 +72,7 @@ header {
     text-align: center;
     margin-bottom: var(--spacing-xl);
     padding-bottom: var(--spacing-lg);
-    border-bottom: 2px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
 }
 
 header h1 {
@@ -712,4 +726,119 @@ footer a:hover {
     text-align: center;
     margin-top: var(--spacing-xl);
     font-style: italic;
+}
+
+/* New Game Table Styles */
+
+.player-slot {
+    position: absolute !important;
+    width: 80px;
+    height: 80px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.player-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: 50%;
+    background: var(--surface-2);
+    border: 2px solid var(--border-color);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+    color: var(--text-secondary);
+    box-shadow: var(--shadow-md);
+    position: relative;
+    transition: all 0.3s ease;
+    z-index: 20;
+}
+
+.player-slot.active .player-avatar {
+    border-color: var(--primary-color);
+    color: white;
+    box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+    transform: scale(1.1);
+}
+
+.player-slot.leader .player-avatar::after {
+    content: '★';
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    background: var(--warning-color);
+    color: black;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    font-size: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 2px solid var(--surface-1);
+}
+
+.player-name {
+    margin-top: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    background: var(--surface-1);
+    padding: 2px 8px;
+    border-radius: 12px;
+    border: 1px solid var(--border-color);
+    white-space: nowrap;
+    z-index: 20;
+}
+
+.player-action {
+    position: absolute;
+    bottom: -24px;
+    font-size: 0.7rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    border-radius: 4px;
+    opacity: 0;
+    transform: translateY(-5px);
+    transition: all 0.3s;
+}
+
+.player-action.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.player-action.vote-approve {
+    background: rgba(16, 185, 129, 0.2);
+    color: #34d399;
+}
+
+.player-action.vote-reject {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+}
+
+/* Game Table - Rectangular Layout */
+.player-slot {
+    /* Existing styles are good, but maybe tweak size if needed */
+    width: 80px;
+    height: 80px;
+    z-index: 20;
+}
+
+/* Ensure centering */
+#playersContainer {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* Connection Lines for Layout */
+.connection-line {
+    /* Update or hide connection lines for now as they might look weird on rect table without specific logic */
+    display: none;
 }

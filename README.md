@@ -57,7 +57,20 @@ Run the application using the entry point:
 ```bash
 python run.py
 ```
+python run.py
+```
 This will start the web server (default: http://localhost:5000).
+
+### Run Evaluation
+
+To run a batch evaluation of AI performance:
+```bash
+python evaluate_win_rate.py --rounds 10 --model deepseek-chat
+```
+Options:
+- `--rounds`: Number of games to play (default: 10)
+- `--model`: AI model to use (default: `deepseek-chat`)
+- `--verbose`: Enable detailed game output (default: silent)
 
 ### Project Structure
 

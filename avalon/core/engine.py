@@ -34,14 +34,7 @@ class AvalonGame:
         self.rejection_count = 0
         self.current_round = 0
 
-        # Display initial game state
-        print("\n" + "="*60)
-        print("AVALON - 6 PLAYER GAME")
-        print("="*60)
-        print("\nRole Assignment:")
-        for p in self.players:
-            print(f"  {p.name}: {p.role} ({'Evil' if p.is_evil else 'Good'})")
-        print("\n" + "="*60)
+        self.current_round = 0
 
     def assign_roles(self, player_names: List[str]) -> List[Player]:
         """Assign roles according to 6-player setup."""
