@@ -6,6 +6,7 @@ let currentUser = null;
 let lastPendingInput = null;  // Track last pending input to avoid unnecessary re-renders
 let currentPlayerRole = null;  // Track current player's role
 let gameStarted = false;  // Track if game has started
+let lastPolledAction = ""; // Track last polled action to mix with SSE updates
 
 // Initialize page
 document.addEventListener('DOMContentLoaded', function () {
@@ -310,6 +311,18 @@ function startStatusPolling() {
     connectToStream();
 }
 
+function updateInteractionStatus(text) {
+    const actionText = document.getElementById('gameAction');
+    if (actionText) {
+        actionText.textContent = text;
+        actionText.style.display = 'block';
+        // Add highlight animation
+        actionText.classList.remove('animate-pulse-fast');
+        void actionText.offsetWidth; // trigger reflow
+        actionText.classList.add('animate-pulse-fast');
+    }
+}
+
 // Connect to SSE stream
 let eventSource = null;
 
@@ -333,6 +346,7 @@ function connectToStream() {
     eventSource.addEventListener('log', function (event) {
         const data = JSON.parse(event.data);
         appendLog(data.message);
+        if (data.message) updateInteractionStatus(data.message);
     });
 
     eventSource.addEventListener('reasoning', function (event) {
@@ -343,16 +357,19 @@ function connectToStream() {
     eventSource.addEventListener('discussion', function (event) {
         const data = JSON.parse(event.data);
         appendLog(`<strong>${data.player}</strong>: ${data.content}`, 'discussion');
+        updateInteractionStatus(`${data.player}: ${data.content}`);
     });
 
     eventSource.addEventListener('vote', function (event) {
         const data = JSON.parse(event.data);
         appendLog(`${data.player} voted <strong>${data.vote}</strong>`, data.vote.toLowerCase());
+        updateInteractionStatus(`${data.player} voted ${data.vote}`);
     });
 
     eventSource.addEventListener('phase', function (event) {
         const data = JSON.parse(event.data);
         appendLog(`--- ${data.name} ---`, 'phase');
+        updateInteractionStatus(`--- ${data.name} ---`);
     });
 
     eventSource.addEventListener('suspicion', function (event) {
@@ -490,12 +507,21 @@ async function updateGameStatus() {
         statusBadge.textContent = status.status.replace('_', ' ');
 
         // Update action text
-        const actionText = document.getElementById('gameAction');
+        // Update action text ONLY if changed (to avoid overwriting real-time SSE updates)
         if (status.current_action && status.status === 'running') {
-            actionText.textContent = status.current_action;
-            actionText.style.display = 'block';
+            if (status.current_action !== lastPolledAction) {
+                updateInteractionStatus(status.current_action);
+                lastPolledAction = status.current_action;
+            }
         } else {
-            actionText.style.display = 'none';
+            // For non-running states, force update or hide
+            const actionText = document.getElementById('gameAction');
+            if (!status.current_action) {
+                actionText.style.display = 'none';
+            } else {
+                actionText.textContent = status.current_action;
+                actionText.style.display = 'block';
+            }
         }
 
         // Toggle Role Info Visibility
@@ -796,7 +822,7 @@ function getStatusClasses(status) {
 }
 
 
-// ============== Seating Chart Functions ==============
+// ============== Seating Chart Functions (Disabled) ==============
 
 function updateSeatingChart(gameStatus, currentAction = '') {
     const phaseElement = document.getElementById('currentPhase');
@@ -831,176 +857,9 @@ function updateSeatingChart(gameStatus, currentAction = '') {
         }
     }
 
-    const container = document.getElementById('playersContainer');
-    if (!container) return;
-
-    // Hardcoded player names for now (should be dynamic if API provides them)
-    // Assuming standard 6 player game for now as per previous code
-    const players = ['Alice', 'Bob', 'Charlie', 'David', 'Eve', 'Frank'];
-    const radius = 120; // px
-    // Use offsetWidth/Height to get actual dimensions, fallback to 320 (container size)
-    const centerX = container.offsetWidth / 2 || 160;
-    const centerY = container.offsetHeight / 2 || 160;
-
-    // Reuse existing slots if they exist to preserve animations
-    let playerSlots = container.querySelectorAll('.player-slot');
-    if (playerSlots.length === 0) {
-        container.innerHTML = '';
-
-        // Rectangular Layout Logic (1x2 Aspect Ratio) with Numbering
-        // Table dimensions (visual): ~320px W x 160px H
-        // Container center: centerX, centerY
-
-        // Seat Assignments (Clockwise/Counter-clockwise as needed, or fixed relative)
-        // Let's assume a standard "Poker" style distribution for 6 players
-        // 1: Bottom Right (User / P1)
-        // 2: Bottom Left (P2)
-        // 3: Left (P3)
-        // 4: Top Left (P4)
-        // 5: Top Right (P5)
-        // 6: Right (P6)
-
-        const tableHalfW = 140; // width/2 + padding
-        const tableHalfH = 90;  // height/2 + padding
-
-        players.forEach((player, index) => {
-            let left, top;
-            let seatNumber = index + 1; // 1-based index
-
-            // Calculate position based on index (0-5)
-            // 0 -> Seat 1 (Bottom Right)
-            // 1 -> Seat 2 (Bottom Left)
-            // 2 -> Seat 3 (Left)
-            // 3 -> Seat 4 (Top Left)
-            // 4 -> Seat 5 (Top Right)
-            // 5 -> Seat 6 (Right)
-
-            switch (index) {
-                case 0: // Seat 1: Bottom Right
-                    left = centerX + 60;
-                    top = centerY + tableHalfH;
-                    break;
-                case 1: // Seat 2: Bottom Left
-                    left = centerX - 60;
-                    top = centerY + tableHalfH;
-                    break;
-                case 2: // Seat 3: Left
-                    left = centerX - tableHalfW - 20;
-                    top = centerY;
-                    break;
-                case 3: // Seat 4: Top Left
-                    left = centerX - 60;
-                    top = centerY - tableHalfH;
-                    break;
-                case 4: // Seat 5: Top Right
-                    left = centerX + 60;
-                    top = centerY - tableHalfH;
-                    break;
-                case 5: // Seat 6: Right
-                    left = centerX + tableHalfW + 20;
-                    top = centerY;
-                    break;
-                default:
-                    left = centerX;
-                    top = centerY;
-            }
-
-            // Adjust to center the slot itself (40px half-width/height)
-            left -= 40;
-            top -= 40;
-
-            const slot = document.createElement('div');
-            slot.className = 'player-slot';
-            slot.style.left = `${left}px`;
-            slot.style.top = `${top}px`;
-            slot.dataset.player = player;
-            // Add seat number badge
-            slot.innerHTML = `
-                <div class="seat-badge absolute -top-2 -left-2 w-6 h-6 bg-slate-700 text-slate-300 rounded-full flex items-center justify-center text-xs font-bold border border-slate-600 z-30 shadow-md transform transition-all">
-                    ${seatNumber}
-                </div>
-                <div class="player-avatar transition-all duration-300">
-                   ${player.charAt(0)}
-                </div>
-                <div class="player-name mt-1 text-xs font-medium text-slate-400 bg-slate-900/80 px-2 py-0.5 rounded border border-slate-700/50 backdrop-blur-sm shadow-sm transition-colors">${player}</div>
-                <div class="player-action"></div>
-            `;
-            container.appendChild(slot);
-        });
-        playerSlots = container.querySelectorAll('.player-slot');
-    }
-
-    // Update state of each slot based on game events
-    playerSlots.forEach(slot => {
-        const playerName = slot.dataset.player;
-        const avatar = slot.querySelector('.player-avatar');
-        const nameLabel = slot.querySelector('.player-name');
-
-        // Remove old indicators
-        const existingCrown = slot.querySelector('.leader-crown');
-        if (existingCrown) existingCrown.remove();
-
-        // Reset dynamic visual states
-        avatar.style.transform = 'scale(1)';
-        avatar.style.boxShadow = 'none';
-        avatar.parentElement.style.zIndex = '20';
-        nameLabel.style.color = '#94a3b8'; // slate-400
-        nameLabel.style.borderColor = 'rgba(51, 65, 85, 0.5)'; // slate-700/50
-        nameLabel.style.backgroundColor = 'rgba(15, 23, 42, 0.8)'; // slate-900/80
-
-        // 1. Highlight Leader
-        if (gameStatus === 'running' && status.current_leader === playerName) {
-            // Add Crown Icon
-            const crown = document.createElement('div');
-            crown.className = 'leader-crown absolute -top-6 left-1/2 -translate-x-1/2 text-amber-400 text-lg animate-bounce';
-            crown.innerHTML = '👑';
-            slot.appendChild(crown);
-
-            // Gold Border
-            avatar.style.borderColor = '#fbbf24'; // amber-400
-            nameLabel.style.color = '#fbbf24';
-        }
-
-        // 2. Highlight Active Speaker / Actor
-        let isActive = false;
-
-        if (gameStatus === 'running' && status.current_action) {
-            const action = status.current_action;
-
-            // Discussion: "Discussion: Alice is speaking..."
-            if (action.includes(`Discussion: ${playerName} is speaking`)) {
-                isActive = true;
-            }
-            // Leader Opening: "Discussion Phase: Leader Bob opens the floor"
-            else if (action.includes(`Leader ${playerName} opens the floor`)) {
-                isActive = true;
-            }
-            // Assassin: "Assassination Phase: Assassin is choosing..." (Only if we know who?)
-            // We shouldn't reveal Assassin to others. But if "Alice" is the user and is Assassin...
-            // For now, let's just stick to public info.
-        }
-
-        if (isActive) {
-            // Speaking: Indigo Glow & Pulse
-            avatar.style.transform = 'scale(1.2)';
-            avatar.parentElement.style.zIndex = '30';
-            avatar.style.borderColor = '#818cf8'; // indigo-400
-            avatar.style.boxShadow = '0 0 20px rgba(99, 102, 241, 0.6)';
-
-            nameLabel.style.color = '#fff';
-            nameLabel.style.borderColor = '#6366f1';
-            nameLabel.style.backgroundColor = 'rgba(99, 102, 241, 0.4)';
-            nameLabel.textContent = `${playerName} 💬`;
-        } else {
-            // Reset text (remove emoji if present)
-            nameLabel.textContent = playerName;
-        }
-
-        // Highlight Alice (Self) - Always subtle indicator
-        if (playerName === 'Alice') {
-            avatar.style.boxShadow = isActive ? avatar.style.boxShadow : '0 0 0 2px rgba(99, 102, 241, 0.3)';
-        }
-    });
+    // Seating chart visualization has been removed as per user request.
+    // The player slots generation logic is removed to keep code clean.
+    return;
 }
 
 // Fetch and display player role when game starts

@@ -4,7 +4,7 @@ let currentUser = null;
 let currentGameData = null;
 
 // Initialize page
-document.addEventListener('DOMContentLoaded', function() {
+document.addEventListener('DOMContentLoaded', function () {
     checkAuthStatus();
 });
 
@@ -14,7 +14,7 @@ async function checkAuthStatus() {
     try {
         const response = await fetch('/api/auth/me');
         const data = await response.json();
-        
+
         if (data.authenticated) {
             currentUser = data.user;
             updateUIForLoggedInUser(data.user);
@@ -37,19 +37,19 @@ function updateUIForLoggedInUser(user) {
         navEmail.textContent = user.email.split('@')[0];
         navEmail.classList.remove('hidden');
     }
-    
+
     // Show games container, hide login required
     document.getElementById('loginRequired').classList.add('hidden');
     document.getElementById('gamesContainer').classList.remove('hidden');
-    
+
     // Update modal user info
     document.getElementById('authForm').classList.add('hidden');
     document.getElementById('userInfo').classList.remove('hidden');
     document.getElementById('userEmail').textContent = user.email;
-    
+
     const vipBadge = document.getElementById('vipBadge');
     const userWeeklyGames = document.getElementById('userWeeklyGames');
-    
+
     if (user.is_vip) {
         vipBadge.classList.remove('hidden');
         userWeeklyGames.textContent = 'Unlimited games';
@@ -65,11 +65,11 @@ function updateUIForLoggedOutUser() {
     if (navEmail) {
         navEmail.classList.add('hidden');
     }
-    
+
     // Show login required, hide games container
     document.getElementById('loginRequired').classList.remove('hidden');
     document.getElementById('gamesContainer').classList.add('hidden');
-    
+
     // Update modal
     document.getElementById('authForm').classList.remove('hidden');
     document.getElementById('userInfo').classList.add('hidden');
@@ -85,7 +85,7 @@ function closeSettingsModal() {
 }
 
 // Close modal when clicking outside
-document.addEventListener('click', function(e) {
+document.addEventListener('click', function (e) {
     const modal = document.getElementById('settingsModal');
     if (e.target === modal) {
         closeSettingsModal();
@@ -100,22 +100,22 @@ async function handleLogin() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
     const errorEl = document.getElementById('authError');
-    
+
     if (!email || !password) {
         errorEl.textContent = 'Please enter email and password';
         errorEl.classList.remove('hidden');
         return;
     }
-    
+
     try {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             errorEl.classList.add('hidden');
             await checkAuthStatus();
@@ -134,28 +134,28 @@ async function handleRegister() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
     const errorEl = document.getElementById('authError');
-    
+
     if (!email || !password) {
         errorEl.textContent = 'Please enter email and password';
         errorEl.classList.remove('hidden');
         return;
     }
-    
+
     if (password.length < 6) {
         errorEl.textContent = 'Password must be at least 6 characters';
         errorEl.classList.remove('hidden');
         return;
     }
-    
+
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             errorEl.classList.add('hidden');
             await checkAuthStatus();
@@ -194,28 +194,28 @@ async function loadUserGames() {
     const loadingState = document.getElementById('loadingState');
     const emptyState = document.getElementById('emptyState');
     const gamesList = document.getElementById('gamesList');
-    
+
     loadingState.classList.remove('hidden');
     emptyState.classList.add('hidden');
     gamesList.innerHTML = '';
-    
+
     try {
         const response = await fetch('/api/user_games');
         const data = await response.json();
-        
+
         loadingState.classList.add('hidden');
-        
+
         if (!data.games || data.games.length === 0) {
             emptyState.classList.remove('hidden');
             return;
         }
-        
+
         // Render games
         data.games.forEach(game => {
             const card = createGameCard(game);
             gamesList.appendChild(card);
         });
-        
+
     } catch (error) {
         console.error('Failed to load games:', error);
         loadingState.classList.add('hidden');
@@ -227,10 +227,10 @@ function createGameCard(game) {
     const card = document.createElement('div');
     card.className = 'glass-panel rounded-xl p-4 hover:bg-slate-800/50 transition-all cursor-pointer';
     card.onclick = () => openGameDetail(game.game_id);
-    
+
     const winnerClass = game.winner === 'Good' ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/30' : 'text-red-400 bg-red-500/10 border-red-500/30';
     const roleClass = ['Merlin', 'Percival', 'Loyal Servant'].includes(game.user_role) ? 'text-blue-400' : 'text-red-400';
-    
+
     card.innerHTML = `
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
@@ -258,22 +258,22 @@ function createGameCard(game) {
             </div>
         </div>
     `;
-    
+
     return card;
 }
 
 async function openGameDetail(gameId) {
     const modal = document.getElementById('gameDetailModal');
     modal.classList.remove('hidden');
-    
+
     // Reset tabs
     showDetailTab('log');
-    
+
     // Load game data
     try {
         const response = await fetch(`/api/log/${gameId}`);
         const data = await response.json();
-        
+
         if (response.ok) {
             currentGameData = data;
             renderGameDetail(data);
@@ -296,7 +296,7 @@ function showDetailTab(tab) {
     const tabReasoning = document.getElementById('tabReasoning');
     const contentLog = document.getElementById('tabContentLog');
     const contentReasoning = document.getElementById('tabContentReasoning');
-    
+
     if (tab === 'log') {
         tabLog.className = 'px-4 py-2 text-sm font-medium text-indigo-400 border-b-2 border-indigo-500';
         tabReasoning.className = 'px-4 py-2 text-sm font-medium text-slate-400 hover:text-white border-b-2 border-transparent';
@@ -314,17 +314,17 @@ function renderGameDetail(data) {
     // Update header
     document.getElementById('detailGameId').textContent = `Game: ${data.game_id}`;
     document.getElementById('detailGameTime').textContent = formatTimestamp(data.timestamp);
-    
+
     // Update summary
     const winner = data.final_result?.winner || 'Unknown';
     document.getElementById('detailWinner').textContent = winner;
     document.getElementById('detailWinner').className = `text-lg font-bold ${winner === 'Good' ? 'text-emerald-400' : 'text-red-400'}`;
-    
+
     // Find user's role (Alice)
     const players = data.players || [];
     const alice = players.find(p => p.name === 'Alice');
     document.getElementById('detailUserRole').textContent = alice?.role || 'Unknown';
-    
+
     // Count missions
     const rounds = data.rounds || [];
     let goodMissions = 0;
@@ -335,10 +335,10 @@ function renderGameDetail(data) {
     });
     document.getElementById('detailMissions').textContent = `${goodMissions} - ${evilMissions}`;
     document.getElementById('detailRounds').textContent = rounds.length;
-    
+
     // Render log
     renderDetailLog(data);
-    
+
     // Render reasoning
     renderDetailReasoning(data);
 }
@@ -346,7 +346,7 @@ function renderGameDetail(data) {
 function renderDetailLog(data) {
     const container = document.getElementById('detailLog');
     container.innerHTML = '';
-    
+
     // Players
     const playersDiv = document.createElement('div');
     playersDiv.className = 'mb-4 p-3 bg-slate-800/50 rounded-lg';
@@ -354,32 +354,51 @@ function renderDetailLog(data) {
         <p class="text-xs font-bold text-slate-400 uppercase tracking-wide mb-2">Players</p>
         <div class="grid grid-cols-2 md:grid-cols-3 gap-2">
             ${(data.players || []).map(p => {
-                const roleClass = ['Merlin', 'Percival', 'Loyal Servant'].includes(p.role) ? 'text-blue-400' : 'text-red-400';
-                return `<div class="text-sm"><span class="text-white">${p.name}</span>: <span class="${roleClass}">${p.role}</span></div>`;
-            }).join('')}
+        const roleClass = ['Merlin', 'Percival', 'Loyal Servant'].includes(p.role) ? 'text-blue-400' : 'text-red-400';
+        return `<div class="text-sm"><span class="text-white">${p.name}</span>: <span class="${roleClass}">${p.role}</span></div>`;
+    }).join('')}
         </div>
     `;
     container.appendChild(playersDiv);
-    
+
     // Rounds
     (data.rounds || []).forEach((round, index) => {
         const roundDiv = document.createElement('div');
         roundDiv.className = 'mb-4 border-l-2 border-indigo-500/30 pl-4';
-        
-        const resultClass = round.mission_result === 'Success' ? 'text-emerald-400' : 'text-red-400';
-        
+
+        // Find approved proposal (or last parsing attempt)
+        const proposals = round.proposals || [];
+        const approvedProposal = proposals.find(p => p.approved) || proposals[proposals.length - 1] || {};
+
+        // Get Mission Data
+        const mission = round.mission || {};
+        const leader = approvedProposal.leader || 'Unknown';
+        const team = mission.team || approvedProposal.final_team || approvedProposal.initial_team || [];
+        const votes = approvedProposal.votes || {};
+
+        let resultStr = '';
+        let resultClass = '';
+
+        if (mission.success !== undefined) {
+            resultStr = mission.success ? 'Success' : 'Fail';
+            resultClass = mission.success ? 'text-emerald-400' : 'text-red-400';
+        } else if (round.mission_result) {
+            resultStr = round.mission_result;
+            resultClass = resultStr === 'Success' ? 'text-emerald-400' : 'text-red-400';
+        }
+
         roundDiv.innerHTML = `
             <p class="text-sm font-bold text-amber-400 mb-2">Round ${index + 1}</p>
             <div class="space-y-1 text-xs text-slate-300">
-                <p>Leader: <span class="text-white">${round.leader}</span></p>
-                <p>Team: <span class="text-white">${(round.final_team || round.proposed_team || []).join(', ')}</span></p>
-                ${round.votes ? `<p>Votes: ${Object.entries(round.votes).map(([p, v]) => `<span class="${v === 'APPROVE' ? 'text-emerald-400' : 'text-red-400'}">${p}</span>`).join(', ')}</p>` : ''}
-                ${round.mission_result ? `<p>Result: <span class="${resultClass} font-bold">${round.mission_result}</span></p>` : ''}
+                <p>Leader: <span class="text-white">${leader}</span></p>
+                <p>Team: <span class="text-white">${team.join(', ')}</span></p>
+                ${Object.keys(votes).length > 0 ? `<p>Votes: ${Object.entries(votes).map(([p, v]) => `<span class="${v === true || v === 'APPROVE' ? 'text-emerald-400' : 'text-red-400'}">${p}</span>`).join(', ')}</p>` : ''}
+                ${resultStr ? `<p>Result: <span class="${resultClass} font-bold">${resultStr}</span></p>` : ''}
             </div>
         `;
         container.appendChild(roundDiv);
     });
-    
+
     // Final result
     if (data.final_result) {
         const finalDiv = document.createElement('div');
@@ -396,50 +415,59 @@ function renderDetailLog(data) {
 function renderDetailReasoning(data) {
     const container = document.getElementById('detailReasoning');
     container.innerHTML = '';
-    
+
     let hasReasoning = false;
-    
-    // Extract reasoning from rounds
+
+    // Helper to add reasoning entry
+    const addEntry = (player, context, text) => {
+        hasReasoning = true;
+        const entry = document.createElement('div');
+        entry.className = 'mb-4 bg-slate-800/30 border border-slate-700/50 rounded p-3';
+        entry.innerHTML = `
+            <div class="flex items-center gap-2 mb-2">
+                <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">${player}</span>
+                <span class="text-xs text-slate-500">${context}</span>
+            </div>
+            <div class="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">${text}</div>
+        `;
+        container.appendChild(entry);
+    };
+
+    // Extract reasoning from rounds -> proposals
     (data.rounds || []).forEach((round, roundIndex) => {
-        // Check for discussion with reasoning
-        if (round.discussion && Array.isArray(round.discussion)) {
-            round.discussion.forEach(comment => {
-                if (comment.reasoning) {
-                    hasReasoning = true;
-                    const entry = document.createElement('div');
-                    entry.className = 'mb-4 bg-slate-800/30 border border-slate-700/50 rounded p-3';
-                    entry.innerHTML = `
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-xs font-bold text-indigo-400 uppercase tracking-wider">${comment.player}</span>
-                            <span class="text-xs text-slate-500">Round ${roundIndex + 1} Discussion</span>
-                        </div>
-                        <div class="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">${comment.reasoning}</div>
-                    `;
-                    container.appendChild(entry);
-                }
-            });
-        }
-        
-        // Check for vote reasoning
-        if (round.vote_reasoning) {
-            Object.entries(round.vote_reasoning).forEach(([player, reasoning]) => {
-                if (reasoning) {
-                    hasReasoning = true;
-                    const entry = document.createElement('div');
-                    entry.className = 'mb-4 bg-slate-800/30 border border-slate-700/50 rounded p-3';
-                    entry.innerHTML = `
-                        <div class="flex items-center gap-2 mb-2">
-                            <span class="text-xs font-bold text-purple-400 uppercase tracking-wider">${player}</span>
-                            <span class="text-xs text-slate-500">Round ${roundIndex + 1} Vote</span>
-                        </div>
-                        <div class="text-slate-300 text-sm whitespace-pre-wrap leading-relaxed">${reasoning}</div>
-                    `;
-                    container.appendChild(entry);
-                }
-            });
-        }
+        const proposals = round.proposals || [];
+
+        proposals.forEach((proposal, propIndex) => {
+            // 1. Leader Initial Reasoning
+            if (proposal.leader_reasoning) {
+                addEntry(proposal.leader || 'Unknown', `Round ${roundIndex + 1} Proposal ${propIndex + 1} (Initial)`, proposal.leader_reasoning);
+            }
+
+            // 2. Discussion Reasoning (if any)
+            if (proposal.discussion && Array.isArray(proposal.discussion)) {
+                proposal.discussion.forEach(comment => {
+                    if (comment.reasoning) {
+                        addEntry(comment.player, `Round ${roundIndex + 1} Discussion`, comment.reasoning);
+                    }
+                });
+            }
+
+            // 3. Leader Final Reasoning
+            if (proposal.leader_final_reasoning) {
+                addEntry(proposal.leader || 'Unknown', `Round ${roundIndex + 1} Proposal ${propIndex + 1} (Final)`, proposal.leader_final_reasoning);
+            }
+
+            // 4. Vote Reasoning
+            if (proposal.vote_reasoning) {
+                Object.entries(proposal.vote_reasoning).forEach(([player, reasoning]) => {
+                    if (reasoning) {
+                        addEntry(player, `Round ${roundIndex + 1} Vote`, reasoning);
+                    }
+                });
+            }
+        });
     });
-    
+
     if (!hasReasoning) {
         container.innerHTML = '<p class="text-slate-500 text-center italic py-8">No AI reasoning data available for this game</p>';
     }

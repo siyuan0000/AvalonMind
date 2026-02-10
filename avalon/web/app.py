@@ -328,27 +328,51 @@ def list_logs():
 @app.route('/api/log/<game_id>')
 def get_log(game_id):
     """Get a specific game log"""
+    # 1. Try local file
     log_file = os.path.join(os.path.dirname(__file__), 'logs', f'game_{game_id}.json')
 
-    if not os.path.exists(log_file):
-        return jsonify({'error': 'Log not found'}), 404
+    if os.path.exists(log_file):
+        try:
+            with open(log_file, 'r') as f:
+                log_data = json.load(f)
+            return jsonify(log_data)
+        except Exception as e:
+            print(f"Error reading local log {game_id}: {e}")
+            # Fallthrough to Supabase
 
+    # 2. Try Supabase
     try:
-        with open(log_file, 'r') as f:
-            log_data = json.load(f)
-        return jsonify(log_data)
+        log_data = supabase.get_game_log(game_id)
+        if log_data:
+            return jsonify(log_data)
     except Exception as e:
-        return jsonify({'error': str(e)}), 500
+        print(f"Error fetching Supabase log {game_id}: {e}")
+
+    return jsonify({'error': 'Log not found'}), 404
 
 @app.route('/api/log/<game_id>/download')
 def download_log(game_id):
     """Download a game log as JSON"""
+    # 1. Try local file
     log_file = os.path.join(os.path.dirname(__file__), 'logs', f'game_{game_id}.json')
 
-    if not os.path.exists(log_file):
-        return jsonify({'error': 'Log not found'}), 404
+    if os.path.exists(log_file):
+        return send_file(log_file, as_attachment=True, download_name=f'game_{game_id}.json')
 
-    return send_file(log_file, as_attachment=True, download_name=f'game_{game_id}.json')
+    # 2. Try Supabase
+    try:
+        log_data = supabase.get_game_log(game_id)
+        if log_data:
+            from io import BytesIO
+            json_str = json.dumps(log_data, indent=2)
+            mem = BytesIO()
+            mem.write(json_str.encode('utf-8'))
+            mem.seek(0)
+            return send_file(mem, as_attachment=True, download_name=f'game_{game_id}.json', mimetype='application/json')
+    except Exception as e:
+        print(f"Error fetching Supabase log for download {game_id}: {e}")
+
+    return jsonify({'error': 'Log not found'}), 404
 
 @app.route('/viewer')
 def viewer():
