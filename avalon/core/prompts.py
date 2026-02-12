@@ -45,17 +45,22 @@ TIMELINE MEMORY RULES:
 
 You are the leader. You must select exactly {team_size} players for this mission.
 
-STRATEGIC ANALYSIS FRAMEWORK:
+STRATEGIC ANALYSIS FRAMEWORK (ENHANCED WITH EXPERT TIPS):
 
 1. ROLE-BASED STRATEGY:
-   - If you are Merlin: You know who Evil players are. Avoid them subtly without revealing your knowledge.
-     * Don't exclude all Evil players immediately - that's too obvious
-     * Balance mission success with protecting your identity
-   - If you are Evil (Morgana/Assassin): Include yourself or Evil teammate to sabotage, but maintain cover.
-     * Early game: May pass missions to build trust
-     * Late game: Must fail missions if Evil is behind
-   - If you are Percival: You see Merlin+Morgana but can't distinguish them. Trust proven Good players.
-   - If you are Loyal Servant: Rely on behavioral patterns, voting history, and mission results.
+   - If you are Merlin: You know who Evil players are.
+     * TIP: Don't be too obvious! Avoid assassination by sometimes blending in.
+     * Unite with Good players to approve reasonable teams.
+   - If you are Percival: You see Merlin+Morgana.
+     * CORE LEADER: You are the heart of the Good team.
+     * Distinguish Merlin from Morgana based on their proposals and votes.
+     * Lead the Good team by selecting trusted players.
+   - If you are Loyal Servant: Follow Percival's lead (if you can identify them).
+     * Unite with other Good players. Support reasonable teams.
+   - If you are Evil (Morgana/Assassin):
+     * Disguise as Loyal: Vote 'Success' often to hide your identity.
+     * Disguise as Merlin: (Morgana specifically) Try to deceive Percival.
+     * Cause Infighting: Make Good players doubt each other.
 
 2. HISTORICAL PATTERN ANALYSIS:
    - Review WHO was on failed missions → likely contains Evil players
@@ -138,7 +143,7 @@ Previous discussion:
 
 You now have the opportunity to discuss this proposal strategically.
 
-DISCUSSION STRATEGY FRAMEWORK:
+DISCUSSION STRATEGY FRAMEWORK (ENHANCED WITH EXPERT TIPS):
 
 1. EVIDENCE-BASED REASONING:
    - Reference specific past missions: "Player X was on Round 2's failed mission"
@@ -147,18 +152,20 @@ DISCUSSION STRATEGY FRAMEWORK:
    - Build on others' observations: "I agree with [Player]'s concern about..."
 
 2. ROLE-SPECIFIC DISCUSSION TACTICS:
-   - If you are Merlin: Guide discussion subtly. Raise concerns about Evil players WITHOUT revealing you know for certain.
-     * Use probabilistic language: "I'm suspicious of X based on their voting"
-     * Don't be too accurate too often - it reveals you
-   - If you are Evil: Create doubt and confusion. Defend Good players selectively to appear trustworthy.
-     * Deflect suspicion from Evil teammates casually
-     * Sometimes agree with valid concerns to build credibility
-   - If you are Percival: You can be more vocal in supporting Good decisions.
-     * Hint that you have information (to protect Merlin)
-     * Build trust by making accurate observations
-   - If you are Loyal Servant: Use pure logic and pattern analysis.
-     * Question inconsistencies in others' behavior
-     * Support proposals with clear reasoning
+   - If you are Merlin: Guide discussion subtly.
+     * TIP: Don't be too obvious! If you are too accurate, Assassin will find you.
+     * Use probabilistic language ("I suspect...") rather than certainty.
+   - If you are Percival: LEAD THE DISCUSSION.
+     * You see Merlin+Morgana. Your job is to identify the TRUE Merlin.
+     * Test them: See who supports Good teams and who supports Evil teams.
+     * Protect Merlin by being loud and taking attention.
+   - If you are Loyal Servant: UNITE with other Good players.
+     * Follow the lead of players who seem to have valid information (likely Percival).
+     * Don't cause unnecessary infighting.
+   - If you are Evil (Morgana/Assassin): DECEIVE and DISRUPT.
+     * Morgana: Pretend to be Merlin! Trick Percival into trusting you.
+     * Cause infighting among Good players by casting doubt on trusted players.
+     * Disguise as Loyal: Agree with valid concerns to build credibility.
 
 3. BEHAVIORAL ANALYSIS:
    - Has this leader made good choices before?
@@ -340,7 +347,7 @@ DEFAULT VOTING BIAS:
 - Approving is usually safer for Good because repeated rejections push the track toward a forced 5th vote that often benefits Evil.
 - Reject ONLY when the timeline gives concrete evidence the team is compromised; otherwise lean APPROVE to avoid helping Evil stall.
 
-STRATEGIC VOTING FRAMEWORK:
+STRATEGIC VOTING FRAMEWORK (ENHANCED WITH EXPERT TIPS):
 
 1. TEAM COMPOSITION ANALYSIS:
    - Review each team member's history:
@@ -353,33 +360,27 @@ STRATEGIC VOTING FRAMEWORK:
 2. ROLE-SPECIFIC VOTING STRATEGY:
 
    For MERLIN:
-   - You KNOW who is Evil. Use this knowledge carefully.
-   - REJECT teams with Evil players (unless you need to hide your knowledge)
-   - APPROVE teams with only Good players
-   - BALANCE: Sometimes let one marginal team pass to avoid revealing yourself
-   - Consider: If you reject every Evil team, Assassin will find you
+   - You KNOW who is Evil.
+   - REJECT teams with Evil players (unless you need to hide your knowledge).
+   - TIP: Don't reject EVERY Evil team immediately - it reveals you.
+   - APPROVE teams with only Good players.
 
    For PERCIVAL:
-   - You can be more vocal and active than Merlin
-   - APPROVE teams without suspicious players
-   - REJECT teams with patterns suggesting Evil involvement
-   - DEFEND players you believe are Merlin (drawing Assassin's attention to yourself)
-   - Consider: Your role is to protect Merlin by being a decoy
+   - You see Merlin+Morgana.
+   - REJECT if you think the leader is Morgana.
+   - APPROVE if you think the leader is Merlin.
+   - Use your vote to signal to other Good players who they should trust.
 
    For LOYAL SERVANT:
-   - Use pure behavioral analysis and pattern recognition
-   - APPROVE teams with players who have good track records
-   - REJECT teams with players who were on multiple failed missions
-   - Trust voting patterns: players who consistently support Good teams are likely Good
-   - Consider: You are the "voice of reason" - use logic and evidence
+   - Follow the lead of trusted players (especially Percival if identified).
+   - UNITE with other Good players. Don't reject reasonable teams just because you're not on them.
+   - Reject if there are obvious "Fail" voters from previous rounds on the team.
 
    For EVIL (Morgana/Assassin):
-   - Your goal: Make Good doubt each other while advancing Evil's agenda
-   - EARLY GAME: Approve good teams to build trust
-   - MID GAME: Strategically reject Good teams to create chaos
-   - LATE GAME: Block Good teams if Evil is close to winning
-   - COVER MAINTENANCE: Don't vote with your Evil teammate too obviously
-   - CHAOS CREATION: Sometimes approve teams that will fail (if you're on them)
+   - DISGUISE AS LOYAL: Vote 'APPROVE' often to appear Good.
+   - CAUSE CHAOS: Occasionally vote 'REJECT' on Good teams to confuse them.
+   - Morgana: Try to mimic Merlin's voting pattern to trick Percival.
+   - Don't block everything - it makes you suspicious.
 
 3. VOTING PATTERN AWARENESS:
    - Who else is likely to approve/reject this team?
@@ -458,7 +459,7 @@ ROLE-BASED REQUIREMENTS:
 
 ═══════════════════════════════════════════════════════════════
 
-STRATEGIC GUIDANCE FOR EVIL PLAYERS:
+STRATEGIC GUIDANCE FOR EVIL PLAYERS (ENHANCED WITH EXPERT TIPS):
 
 SITUATION ANALYSIS:
 Current mission status: {game_state}
@@ -469,6 +470,7 @@ Current mission status: {game_state}
 DECISION TREE FOR EVIL:
 
 ┌─ EARLY GAME (First 1-2 missions) ─┐
+│ TIP: DISGUISE AS LOYAL             │
 │ Consider: SUCCESS to build trust   │
 │ ✓ Creates cover for later rounds   │
 │ ✓ Makes you seem like a Good player│
@@ -480,26 +482,26 @@ DECISION TREE FOR EVIL:
 └────────────────────────────────────┘
 
 ┌─ MID GAME (Missions 2-4) ─┐
-│ Critical decision point     │
-│ FAIL if:                    │
-│   - Evil needs failures NOW │
-│   - You're not highly suspected│
-│   - This is a safe opportunity│
-│ SUCCESS if:                 │
-│   - You're under suspicion  │
-│   - One failure would expose you│
-│   - Evil can afford to wait │
-└────────────────────────────┘
+│ TIP: CAUSE CHAOS / DISRUPT          │
+│ FAIL if:                            │
+│   - Evil needs failures NOW         │
+│   - You're not highly suspected     │
+│   - This is a safe opportunity      │
+│ SUCCESS if:                         │
+│   - You're under suspicion          │
+│   - One failure would expose you    │
+│   - Evil can afford to wait         │
+└────────────────────────────────────┘
 
 ┌─ LATE GAME (Mission 4-5) ─┐
-│ URGENT - Evil must act      │
-│ FAIL if:                    │
-│   - Evil needs this to win  │
+│ URGENT - Evil must act              │
+│ FAIL if:                            │
+│   - Evil needs this to win          │
 │   - Even if suspicious, it's now or never│
-│ SUCCESS if:                 │
+│ SUCCESS if:                         │
 │   - Evil already has enough failures│
-│   - Good has 2 successes already│
-└────────────────────────────┘
+│   - Good has 2 successes already    │
+└────────────────────────────────────┘
 
 SUSPICION LEVEL ASSESSMENT:
 - Have you been on multiple teams?

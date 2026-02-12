@@ -117,6 +117,7 @@ def run_game_thread(game_config):
 
         # Initialize players
         player_names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank']
+        running_game['players'] = player_names
         game = AvalonGame(player_names)
 
         # Create AI instances based on configuration
@@ -130,7 +131,19 @@ def run_game_thread(game_config):
             raise ValueError("DeepSeek API Key not found. Please check .env.local")
         
         # Player 0 (Alice) - Always Human Player (removed observer mode)
-        player_ais.append(HumanPlayer(name=player_names[0]))
+        # Use custom display name if available for authenticated user
+        p0_name = player_names[0]
+        user_id = running_game.get('user_id')
+        if user_id:
+            profile = supabase.get_user_profile(user_id)
+            if profile and profile.get('display_name'):
+                p0_name = profile.get('display_name')
+                player_names[0] = p0_name
+                # Update in game instance too if names were already assigned
+                if game.players:
+                    game.players[0].name = p0_name
+        
+        player_ais.append(HumanPlayer(name=p0_name))
             
         # Players 1-5 - Fixed DeepSeek AI
         for i in range(1, 6):
@@ -263,7 +276,8 @@ def game_status():
                 'mission_results': current_controller.game.mission_results,
                 'rejection_count': current_controller.game.rejection_count,
                 'current_round': current_controller.game.current_round,
-                'current_leader': current_controller.game.get_current_leader().name
+                'current_leader': current_controller.game.get_current_leader().name,
+                'current_team_proposal': current_controller.game.current_team_proposal
             })
 
         # Ensure all values are JSON serializable
@@ -468,6 +482,26 @@ def auth_logout():
     session.clear()
     return jsonify({'message': 'Logged out successfully'})
 
+@app.route('/api/auth/update_profile', methods=['POST'])
+def update_profile():
+    """Update user profile."""
+    user_id = get_current_user_id()
+    if not user_id:
+        return jsonify({'error': 'Unauthorized'}), 401
+    
+    data = request.json
+    display_name = data.get('display_name')
+    
+    if not display_name:
+        return jsonify({'error': 'Display name is required'}), 400
+        
+    success = supabase.update_user_profile(user_id, {'display_name': display_name})
+    
+    if success:
+        return jsonify({'message': 'Profile updated successfully'})
+    else:
+        return jsonify({'error': 'Failed to update profile'}), 500
+
 @app.route('/api/auth/me')
 def auth_me():
     """Get current user info."""
@@ -485,6 +519,7 @@ def auth_me():
         'user': {
             'id': user_id,
             'email': email,
+            'display_name': profile.get('display_name') if profile else None,
             'is_vip': profile.get('is_vip', False) if profile else False,
             'weekly_games': weekly_count
         }

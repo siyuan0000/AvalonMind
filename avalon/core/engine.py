@@ -33,8 +33,7 @@ class AvalonGame:
         self.mission_results: List[bool] = []  # True = Success, False = Fail
         self.rejection_count = 0
         self.current_round = 0
-
-        self.current_round = 0
+        self.current_team_proposal: List[str] = []
 
     def assign_roles(self, player_names: List[str]) -> List[Player]:
         """Assign roles according to 6-player setup."""

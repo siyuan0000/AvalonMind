@@ -500,6 +500,7 @@ class GameController:
         round_log = self.logger.start_round(round_num + 1, team_size)
 
         self.game.rejection_count = 0
+        self.game.current_team_proposal = []
 
         while self.game.rejection_count < 5:
             if self.stop_requested:
@@ -516,6 +517,7 @@ class GameController:
             # Leader proposes initial team
             initial_team, leader_reasoning = self.ai_propose_team(leader, team_size)
             initial_team_names = [p.name for p in initial_team]
+            self.game.current_team_proposal = initial_team_names
             if self.verbose:
                 print(f"Initial proposal: {initial_team_names}")
 
@@ -532,6 +534,7 @@ class GameController:
                     print("\nAfter 4 rejections, this team must proceed without voting!")
                 final_team = initial_team
                 final_team_names = initial_team_names
+                self.game.current_team_proposal = final_team_names
                 self.logger.log_final_team(proposal_log, final_team_names)
             else:
                 # Discussion phase - each player comments in order
@@ -588,6 +591,7 @@ class GameController:
                 initial_names = set(p.name for p in initial_team)
                 final_names = set(p.name for p in final_team)
                 final_team_names = [p.name for p in final_team]
+                self.game.current_team_proposal = final_team_names
 
                 # Log final team
                 self.logger.log_final_team(proposal_log, final_team_names, final_reasoning)

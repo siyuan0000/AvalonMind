@@ -85,9 +85,14 @@ function updateUIForLoggedInUser(user) {
     if (user.is_vip) {
         vipBadge.classList.remove('hidden');
         userWeeklyGames.textContent = 'Unlimited games';
-    } else {
         vipBadge.classList.add('hidden');
         userWeeklyGames.textContent = `${user.weekly_games}/1 games this week`;
+    }
+
+    // Populate display name
+    const displayNameInput = document.getElementById('userDisplayName');
+    if (displayNameInput) {
+        displayNameInput.value = user.display_name || '';
     }
 }
 
@@ -208,6 +213,55 @@ async function handleLogout() {
         closeSettingsModal();
     } catch (error) {
         console.error('Logout failed:', error);
+    }
+}
+
+async function updateProfile() {
+    const displayName = document.getElementById('userDisplayName').value;
+    const saveBtn = document.querySelector('button[onclick="updateProfile()"]');
+    const originalText = saveBtn.textContent;
+
+    if (!displayName) {
+        alert('Please enter a display name');
+        return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Saving...';
+
+    try {
+        const response = await fetch('/api/auth/update_profile', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ display_name: displayName })
+        });
+
+        const data = await response.json();
+
+        if (response.ok) {
+            saveBtn.textContent = 'Saved!';
+            saveBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
+            saveBtn.classList.add('bg-green-600', 'hover:bg-green-500');
+
+            // Refresh auth status to update UI
+            await checkAuthStatus();
+
+            setTimeout(() => {
+                saveBtn.textContent = originalText;
+                saveBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
+                saveBtn.classList.remove('bg-green-600', 'hover:bg-green-500');
+                saveBtn.disabled = false;
+            }, 2000);
+        } else {
+            alert('Error: ' + data.error);
+            saveBtn.textContent = originalText;
+            saveBtn.disabled = false;
+        }
+    } catch (error) {
+        console.error('Update profile error:', error);
+        alert('Failed to update profile');
+        saveBtn.textContent = originalText;
+        saveBtn.disabled = false;
     }
 }
 
@@ -347,6 +401,14 @@ function connectToStream() {
         const data = JSON.parse(event.data);
         appendLog(data.message);
         if (data.message) updateInteractionStatus(data.message);
+
+        // Manga FX for Mission Outcomes
+        if (data.message && data.message.includes('Mission')) {
+            if (data.message.includes('Succeeded')) showOnomatopoeia('SUCCESS!', 'success');
+            if (data.message.includes('Failed')) showOnomatopoeia('FAIL!', 'fail');
+            // Force update to show mission result on track immediately
+            updateGameStatus();
+        }
     });
 
     eventSource.addEventListener('reasoning', function (event) {
@@ -358,18 +420,25 @@ function connectToStream() {
         const data = JSON.parse(event.data);
         appendLog(`<strong>${data.player}</strong>: ${data.content}`, 'discussion');
         updateInteractionStatus(`${data.player}: ${data.content}`);
+        showSpeechBubble(data.player, data.content);
     });
 
     eventSource.addEventListener('vote', function (event) {
         const data = JSON.parse(event.data);
         appendLog(`${data.player} voted <strong>${data.vote}</strong>`, data.vote.toLowerCase());
         updateInteractionStatus(`${data.player} voted ${data.vote}`);
+        showSpeechBubble(data.player, (data.vote === 'APPROVE' ? 'I Approve!' : 'I Reject!'));
+        if (data.vote === 'REJECT') showOnomatopoeia('SLAM!', 'fail');
+        // Force update to show vote on track (if revealed) or just generic state
+        updateGameStatus();
     });
 
     eventSource.addEventListener('phase', function (event) {
         const data = JSON.parse(event.data);
         appendLog(`--- ${data.name} ---`, 'phase');
         updateInteractionStatus(`--- ${data.name} ---`);
+        // Force update to reflect new phase on board
+        updateGameStatus();
     });
 
     eventSource.addEventListener('suspicion', function (event) {
@@ -391,56 +460,108 @@ function connectToStream() {
 
 function updateSuspicionHeatmap(observer, scores) {
     const container = document.getElementById('suspicionHeatmap');
-    container.innerHTML = ''; // Clear waiting message
+    if (container) {
+        container.innerHTML = ''; // Clear waiting message
 
-    // Sort scores by value (descending)
-    const sortedEntries = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+        // Sort scores by value (descending)
+        const sortedEntries = Object.entries(scores).sort((a, b) => b[1] - a[1]);
 
-    sortedEntries.forEach(([target, score], index) => {
-        // Determine color based on score
-        let barColorClass = 'from-emerald-500 to-emerald-400';
-        let textColorClass = 'text-emerald-400';
-        let bgColorClass = 'bg-emerald-500/10';
-        let borderColorClass = 'border-emerald-500/30';
+        sortedEntries.forEach(([target, score], index) => {
+            // Determine color based on score
+            let barColorClass = 'from-emerald-500 to-emerald-400';
+            let textColorClass = 'text-emerald-400';
+            let bgColorClass = 'bg-emerald-500/10';
+            let borderColorClass = 'border-emerald-500/30';
 
-        if (score > 70) {
-            barColorClass = 'from-red-500 to-red-400';
-            textColorClass = 'text-red-400';
-            bgColorClass = 'bg-red-500/10';
-            borderColorClass = 'border-red-500/30';
-        } else if (score > 30) {
-            barColorClass = 'from-amber-500 to-amber-400';
-            textColorClass = 'text-amber-400';
-            bgColorClass = 'bg-amber-500/10';
-            borderColorClass = 'border-amber-500/30';
+            if (score > 70) {
+                barColorClass = 'from-red-500 to-red-400';
+                textColorClass = 'text-red-400';
+                bgColorClass = 'bg-red-500/10';
+                borderColorClass = 'border-red-500/30';
+            } else if (score > 30) {
+                barColorClass = 'from-amber-500 to-amber-400';
+                textColorClass = 'text-amber-400';
+                bgColorClass = 'bg-amber-500/10';
+                borderColorClass = 'border-amber-500/30';
+            }
+
+            const card = document.createElement('div');
+            card.className = `${bgColorClass} border ${borderColorClass} rounded-lg p-4 transition-all duration-300 hover:scale-[1.02]`;
+            card.innerHTML = `
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-sm">
+                        ${target.charAt(0)}
+                    </div>
+                    <div class="flex-1">
+                        <div class="flex justify-between items-center mb-2">
+                             <span class="text-sm font-semibold text-white">${target}</span>
+                            <span class="text-lg font-bold ${textColorClass}">${score}%</span>
+                        </div>
+                        <div class="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
+                            <div class="bg-gradient-to-r ${barColorClass} h-2.5 rounded-full transition-all duration-700 ease-out" style="width: ${score}%"></div>
+                        </div>
+                    </div>
+                </div>
+            `;
+            container.appendChild(card);
+        });
+
+        // Add observer label
+        const label = document.createElement('div');
+        label.className = 'text-xs text-center text-slate-500 mt-4 pt-3 border-t border-slate-700';
+        label.innerHTML = `Viewing suspicion from <strong class="text-indigo-400">${observer}</strong>'s perspective`;
+        container.appendChild(label);
+    }
+
+    // --- MANGA BOARD UPDATE ---
+    Object.entries(scores).forEach(([player, score]) => {
+        // Find slot logic similar to showSpeechBubble
+        let slotIndex = -1;
+        for (let i = 0; i < 6; i++) {
+            const slot = document.getElementById(`slot-${i}`);
+            if (slot) {
+                const nameTag = slot.querySelector('.bg-slate-800\\/90');
+                if (nameTag) {
+                    const currentName = nameTag.textContent;
+                    if (currentName === player || (player === 'You' && currentName === 'YOU')) {
+                        slotIndex = i;
+                        break;
+                    }
+                }
+            }
         }
 
-        const card = document.createElement('div');
-        card.className = `${bgColorClass} border ${borderColorClass} rounded-lg p-4 transition-all duration-300 hover:scale-[1.02]`;
-        card.innerHTML = `
-            <div class="flex items-center gap-3">
-                <div class="w-10 h-10 rounded-full bg-slate-700 flex items-center justify-center text-white font-bold text-sm">
-                    ${target.charAt(0)}
-                </div>
-                <div class="flex-1">
-                    <div class="flex justify-between items-center mb-2">
-                        <span class="text-sm font-semibold text-white">${target}</span>
-                        <span class="text-lg font-bold ${textColorClass}">${score}%</span>
-                    </div>
-                    <div class="w-full bg-slate-700/50 rounded-full h-2.5 overflow-hidden">
-                        <div class="bg-gradient-to-r ${barColorClass} h-2.5 rounded-full transition-all duration-700 ease-out" style="width: ${score}%"></div>
-                    </div>
-                </div>
-            </div>
-        `;
-        container.appendChild(card);
-    });
+        if (slotIndex !== -1) {
+            const slot = document.getElementById(`slot-${slotIndex}`);
+            const avatarFrame = slot.querySelector('.avatar-frame');
 
-    // Add observer label
-    const label = document.createElement('div');
-    label.className = 'text-xs text-center text-slate-500 mt-4 pt-3 border-t border-slate-700';
-    label.innerHTML = `Viewing suspicion from <strong class="text-indigo-400">${observer}</strong>'s perspective`;
-    container.appendChild(label);
+            // Remove old classes
+            slot.classList.remove('shake');
+            slot.classList.remove('high-suspicion');
+
+            // Add Sweat Drop if not exists
+            if (avatarFrame && !avatarFrame.querySelector('.sweat-drop')) {
+                const drop = document.createElement('div');
+                drop.className = 'sweat-drop';
+                avatarFrame.appendChild(drop);
+            }
+
+            if (score > 60) {
+                slot.classList.add('high-suspicion'); // Red glow + sweat
+            }
+            if (score > 75) {
+                slot.classList.add('shake'); // Shake effect
+            }
+
+            // Update Crystal Color
+            const crystal = slot.querySelector('.sus-crystal');
+            if (crystal) {
+                if (score < 40) crystal.className = 'sus-crystal bg-emerald-500';
+                else if (score < 70) crystal.className = 'sus-crystal bg-amber-500';
+                else crystal.className = 'sus-crystal bg-red-600';
+            }
+        }
+    });
 }
 
 // ============== Game Log ==============
@@ -626,6 +747,23 @@ async function updateGameStatus() {
 
             // Show error in seating chart
             updateSeatingChart('error');
+        }
+
+        // Update Proposed Team Display
+        const proposedTeamContainer = document.getElementById('proposedTeamContainer');
+        const proposedTeamText = document.getElementById('proposedTeamText');
+
+        if (proposedTeamContainer && proposedTeamText) {
+            const team = status.current_team_proposal;
+            if (team && team.length > 0) {
+                proposedTeamText.textContent = team.join(', ');
+                proposedTeamContainer.classList.remove('hidden');
+                // Small delay to allow display:block to apply before opacity transition
+                setTimeout(() => proposedTeamContainer.classList.remove('opacity-0'), 10);
+            } else {
+                proposedTeamContainer.classList.add('hidden');
+                proposedTeamContainer.classList.add('opacity-0');
+            }
         }
 
         // Update Visual Tracks
@@ -822,45 +960,124 @@ function getStatusClasses(status) {
 }
 
 
-// ============== Seating Chart Functions (Disabled) ==============
+// ============== Seating Chart Functions (Manga Board) ==============
 
-function updateSeatingChart(gameStatus, currentAction = '') {
-    const phaseElement = document.getElementById('currentPhase');
-
-    // Update phase text
-    if (phaseElement) {
-        switch (gameStatus) {
-            case 'idle':
-                phaseElement.textContent = 'Waiting to start';
-                phaseElement.className = 'text-slate-500 font-medium text-xs';
-                break;
-            case 'starting':
-            case 'initializing':
-                phaseElement.textContent = 'Game Starting...';
-                phaseElement.className = 'text-warning-400 font-medium text-xs animate-pulse';
-                break;
-            case 'running':
-                phaseElement.textContent = currentAction || 'Game in Progress';
-                phaseElement.className = 'text-primary-400 font-medium text-xs';
-                break;
-            case 'completed':
-                phaseElement.textContent = 'Game Over';
-                phaseElement.className = 'text-success-400 font-bold text-xs';
-                break;
-            case 'error':
-                phaseElement.textContent = 'Error';
-                phaseElement.className = 'text-error-400 font-bold text-xs';
-                break;
-            default:
-                phaseElement.textContent = gameStatus;
-                phaseElement.className = 'text-slate-400 font-medium text-xs';
-        }
+function updateSeatingChart(status, currentAction = '') {
+    // Update Phase Text
+    const phaseText = document.getElementById('visualPhaseText');
+    if (phaseText && status.status) {
+        phaseText.textContent = `${status.status.toUpperCase()} - ${currentAction || 'Waiting'}`;
     }
 
-    // Seating chart visualization has been removed as per user request.
-    // The player slots generation logic is removed to keep code clean.
-    return;
+    if (!status.players || status.players.length === 0) return;
+
+    // Helper to find player index
+    const players = status.players; // Array of names
+
+    // Determine rotation to put "Me" at slot 0 (if playing)
+    // Note: This requires knowing "my" player name in the game. 
+    // Usually currentUser.email -> mapped to player name. 
+    // For simplicity, we'll map strictly by index for now.
+
+    players.forEach((name, index) => {
+        const slotId = `slot-${index}`;
+        const slot = document.getElementById(slotId);
+        if (!slot) return;
+
+        // Update Name Tag
+        const nameTag = slot.querySelector('.bg-slate-800\\/90');
+        if (nameTag) {
+            nameTag.textContent = name;
+            if (name === 'You' || (currentUser && name === currentUser.email.split('@')[0])) {
+                nameTag.textContent = 'YOU';
+                nameTag.classList.add('text-white', 'font-bold');
+            }
+        }
+
+        // Update Avatar Seed (Consistency)
+        const img = slot.querySelector('img');
+        if (img) {
+            img.src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`;
+        }
+
+        // Active Turn Highlight
+        // Logic: Try to detect if this player is "active" based on logs or state
+        // status.current_player might be available?
+        // If not, we might need to rely on logs. 
+        // Assuming status has 'current_player' or we parse it from currentAction.
+
+        // Simple heuristic: if action starts with name
+        const isActive = currentAction.startsWith(name) || (status.current_player === name);
+
+        if (isActive) {
+            slot.classList.add('active-turn');
+        } else {
+            slot.classList.remove('active-turn');
+        }
+    });
 }
+
+// ============== Visual Tracks (Manga Board) ==============
+
+function updateGameTracks(status) {
+    // 1. Update Manga Quest Track
+    const visualQuestTrack = document.getElementById('visualQuestTrack');
+    if (visualQuestTrack) {
+        const teamSizes = [2, 3, 4, 3, 4];
+        let questHtml = '';
+
+        teamSizes.forEach((size, index) => {
+            let stateClass = 'border-slate-600 bg-slate-800/50 text-slate-500'; // Default
+
+            if (status.status === 'idle') {
+                // Reset
+            } else if (index < status.current_round) {
+                // Completed
+                if (status.mission_results && status.mission_results[index]) {
+                    stateClass = 'border-emerald-500 bg-emerald-500/20 text-emerald-400 shadow-[0_0_10px_rgba(16,185,129,0.5)]'; // Success
+                } else {
+                    stateClass = 'border-red-500 bg-red-500/20 text-red-400 shadow-[0_0_10px_rgba(239,68,68,0.5)]'; // Fail
+                }
+            } else if (index === status.current_round && status.status !== 'completed') {
+                // Current
+                stateClass = 'border-amber-400 bg-amber-500/20 text-amber-200 scale-110 shadow-[0_0_15px_rgba(245,158,11,0.6)] animate-pulse';
+            }
+
+            questHtml += `
+                <div class="w-8 h-8 rounded-full border-2 flex items-center justify-center text-xs font-bold transition-all duration-300 ${stateClass}">
+                    ${size}
+                </div>
+            `;
+        });
+        visualQuestTrack.innerHTML = questHtml;
+    }
+
+    // 2. Update Manga Vote Track
+    const visualVoteTrack = document.getElementById('visualVoteTrack');
+    if (visualVoteTrack) {
+        let voteHtml = '<div class="absolute top-1/2 left-0 w-full h-0.5 bg-slate-700 -translate-y-1/2 z-0"></div>';
+
+        const rejections = status.rejection_count || 0;
+
+        for (let i = 0; i < 5; i++) {
+            let markerClass = 'bg-slate-700';
+            let sizeClass = 'w-2 h-2';
+
+            if (i < rejections) {
+                markerClass = 'bg-red-500 shadow-[0_0_8px_rgba(239,68,68,0.8)] scale-110';
+            }
+            if (i === 4) { // The Fail Node
+                markerClass = i < rejections ? 'bg-red-600 border border-red-400' : 'bg-red-900/50 border border-red-900';
+                sizeClass = 'w-3 h-3';
+            }
+
+            voteHtml += `<div class="rounded-full ${sizeClass} ${markerClass} z-10 transition-all duration-300"></div>`;
+        }
+        visualVoteTrack.innerHTML = voteHtml;
+    }
+}
+
+
 
 // Fetch and display player role when game starts
 async function fetchPlayerRole() {
@@ -945,71 +1162,57 @@ async function fetchPlayerRole() {
     }
 }
 
-// ============== Visual Tracks ==============
 
-function updateGameTracks(status) {
-    const questTrack = document.getElementById('questTrack');
-    const voteTrack = document.getElementById('voteTrack');
+// ============== Narrative Visuals (Manga) ==============
 
-    if (!questTrack || !voteTrack) return;
+function showSpeechBubble(playerName, text) {
+    if (!text) return;
 
-    // Quest Track
-    // Hardcoded config for 6 players: [2, 3, 4, 3, 4]
-    const teamSizes = [2, 3, 4, 3, 4];
-    let questHtml = '';
+    // Find player slot by checking name tags
+    let slotIndex = -1;
 
-    teamSizes.forEach((size, index) => {
-        let stateClass = 'bg-slate-800 border-slate-600 text-slate-500';
-
-        if (status.status === 'idle') {
-            // Reset state
-        } else if (index < status.current_round) {
-            // Completed
-            if (status.mission_results && status.mission_results[index]) {
-                // Success
-                stateClass = 'bg-emerald-600 border-emerald-400 text-white shadow-[0_0_10px_rgba(16,185,129,0.5)]';
-            } else {
-                // Fail
-                stateClass = 'bg-red-600 border-red-400 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]';
-            }
-        } else if (index === status.current_round && status.status !== 'completed') {
-            // Current
-            stateClass = 'bg-amber-600 border-amber-400 text-white scale-110 shadow-[0_0_15px_rgba(245,158,11,0.6)] animate-pulse';
-        }
-
-        questHtml += `
-            <div class="flex flex-col items-center gap-1 transition-all duration-300">
-                 <div class="w-10 h-10 rounded-full border-2 flex items-center justify-center text-lg font-bold ${stateClass}">
-                    ${size}
-                 </div>
-                 <span class="text-[10px] text-slate-500 uppercase font-bold tracking-wider">Q${index + 1}</span>
-            </div>
-        `;
-    });
-    questTrack.innerHTML = questHtml;
-
-    // Vote Track
-    let voteHtml = '<div class="absolute h-0.5 bg-slate-700 w-full top-1/2 -z-10"></div>';
-
-    for (let i = 0; i < 5; i++) {
-        let circleClass = 'bg-slate-800 border-slate-600 text-slate-500';
-        let sizeClass = 'w-3 h-3';
-        let textContent = '';
-
-        if (status.status !== 'idle') {
-            if (i === status.rejection_count) {
-                circleClass = 'bg-indigo-500 border-indigo-400 text-white scale-125 shadow-[0_0_10px_rgba(99,102,241,0.5)] z-10';
-                sizeClass = 'w-6 h-6';
-                textContent = i + 1;
-            } else if (i < status.rejection_count) {
-                circleClass = 'bg-slate-600 border-slate-500 z-10';
-            } else {
-                circleClass = 'bg-slate-800 border-slate-700 z-10';
+    for (let i = 0; i < 6; i++) {
+        const slot = document.getElementById(`slot-${i}`);
+        if (slot) {
+            const nameTag = slot.querySelector('.bg-slate-800\\/90');
+            if (nameTag) {
+                const currentName = nameTag.textContent;
+                // Handle "YOU" case or direct match
+                if (currentName === playerName || (playerName === 'You' && currentName === 'YOU')) {
+                    slotIndex = i;
+                    break;
+                }
             }
         }
-
-        voteHtml += `<div class="${sizeClass} rounded-full border flex items-center justify-center text-xs font-bold transition-all duration-300 ${circleClass}">${textContent}</div>`;
     }
 
-    voteTrack.innerHTML = voteHtml;
+    if (slotIndex !== -1) {
+        const bubble = document.getElementById(`bubble-${slotIndex}`);
+        if (bubble) {
+            bubble.textContent = text;
+            bubble.classList.add('visible');
+            setTimeout(() => { bubble.classList.remove('visible'); }, 5000);
+        }
+    }
+}
+
+function showOnomatopoeia(text, type = 'neutral') {
+    const fxLayer = document.getElementById('fxLayer');
+    if (!fxLayer) return;
+
+    const fx = document.createElement('div');
+    fx.className = 'fx-text fx-animate';
+    fx.textContent = text;
+
+    if (type === 'success') {
+        fx.style.color = '#34d399';
+        fx.style.textShadow = '3px 3px 0 #064e3b';
+    }
+    else if (type === 'fail') {
+        fx.style.color = '#f87171';
+        fx.style.textShadow = '3px 3px 0 #7f1d1d';
+    }
+
+    fxLayer.appendChild(fx);
+    setTimeout(() => { fx.remove(); }, 1500);
 }

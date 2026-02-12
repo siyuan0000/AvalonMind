@@ -74,14 +74,378 @@
             }
         }
 
+
         .animate-pulse-glow {
             animation: pulse-glow 3s infinite;
+        }
+
+        /* --- MANGA BOARD STYLES --- */
+        .manga-board-container {
+            perspective: 1200px;
+            height: 400px;
+            width: 100%;
+            position: relative;
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            overflow: hidden;
+            border-radius: 0.75rem;
+            border: 1px solid #334155;
+        }
+
+        .game-table {
+            width: 320px;
+            height: 180px;
+            position: absolute;
+            top: 55%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotateX(25deg);
+            background: linear-gradient(135deg, #3f2e22 0%, #271c19 100%);
+            border-radius: 12px;
+            border: 6px solid #5d4037;
+            box-shadow:
+                0 20px 40px rgba(0, 0, 0, 0.6),
+                inset 0 0 20px rgba(0, 0, 0, 0.8);
+            z-index: 10;
+        }
+
+        /* Wood Texture Overlay */
+        .game-table::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: repeating-linear-gradient(90deg, transparent, transparent 50px, rgba(255, 255, 255, 0.03) 50px, rgba(255, 255, 255, 0.03) 53px);
+            opacity: 0.3;
+        }
+
+        .player-slot {
+            position: absolute;
+            width: 80px;
+            height: 100px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            transition: all 0.3s ease;
+        }
+
+        /* 
+           Positions for 6 players 
+           Configuration: 1 Top, 1 Bottom, 2 Left, 2 Right
+        */
+        .slot-p0 {
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* User (Me) */
+        .slot-p1 {
+            bottom: 80px;
+            left: 10%;
+        }
+
+        /* Left Bottom */
+        .slot-p2 {
+            top: 60px;
+            left: 10%;
+        }
+
+        /* Left Top */
+        .slot-p3 {
+            top: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+        }
+
+        /* Top Head */
+        .slot-p4 {
+            top: 60px;
+            right: 10%;
+        }
+
+        /* Right Top */
+        .slot-p5 {
+            bottom: 80px;
+            right: 10%;
+        }
+
+        /* Right Bottom */
+
+        .avatar-frame {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background: #475569;
+            border: 3px solid #64748b;
+            position: relative;
+            overflow: visible;
+            transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        .avatar-img {
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            object-fit: cover;
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Action Indicator (!) */
+        .action-indicator {
+            position: absolute;
+            top: -20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #ef4444;
+            color: white;
+            font-weight: 900;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
+            border: 2px solid white;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            animation: bounce 1s infinite;
+            opacity: 0;
+            /* Hidden by default */
+            z-index: 20;
+        }
+
+        /* Active Turn Glow */
+        .active-turn .avatar-frame {
+            border-color: #fbbf24;
+            box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.3), 0 0 20px rgba(251, 191, 36, 0.6);
+            transform: scale(1.1) translateY(-5px);
+        }
+
+        .active-turn .action-indicator {
+            opacity: 1;
+        }
+
+        /* Manga Speech Bubbles */
+        .speech-bubble {
+            position: absolute;
+            background: #ffffff;
+            color: #0f172a;
+            padding: 8px 12px;
+            border-radius: 16px;
+            border-bottom-left-radius: 2px;
+            /* Manga style */
+            font-weight: 700;
+            font-size: 11px;
+            line-height: 1.3;
+            width: 160px;
+            text-align: left;
+            box-shadow: 4px 4px 0px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: scale(0.8) translateY(10px);
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 100;
+        }
+
+        .speech-bubble.visible {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        /* Positioning bubbles relative to slots */
+        .slot-p0 .speech-bubble {
+            bottom: 85px;
+            right: -60px;
+            border-bottom-left-radius: 16px;
+            border-bottom-right-radius: 2px;
+        }
+
+        .slot-p1 .speech-bubble {
+            bottom: 70px;
+            left: 50px;
+        }
+
+        .slot-p2 .speech-bubble {
+            top: 70px;
+            left: 50px;
+            border-bottom-left-radius: 16px;
+            border-top-left-radius: 2px;
+        }
+
+        .slot-p3 .speech-bubble {
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-radius: 16px;
+            border-top-left-radius: 2px;
+        }
+
+        .slot-p4 .speech-bubble {
+            top: 70px;
+            right: 50px;
+            text-align: right;
+            border-bottom-left-radius: 16px;
+            border-top-right-radius: 2px;
+        }
+
+        .slot-p5 .speech-bubble {
+            bottom: 70px;
+            right: 50px;
+            text-align: right;
+            border-bottom-right-radius: 2px;
+            border-bottom-left-radius: 16px;
+        }
+
+        /* Thought Cloud (AI Internal) */
+        .thought-cloud {
+            background: #f1f5f9;
+            border: 2px dashed #94a3b8;
+            color: #475569;
+            font-family: monospace;
+            font-size: 10px;
+            border-radius: 20px;
+        }
+
+        /* Onomatopoeia Text */
+        .fx-text {
+            position: absolute;
+            font-family: 'Impact', sans-serif;
+            font-size: 3rem;
+            font-weight: 900;
+            color: white;
+            text-shadow: 2px 2px 0 #000, -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+            pointer-events: none;
+            z-index: 200;
+            opacity: 0;
+            transform: scale(0.5) rotate(-15deg);
+        }
+
+        .fx-animate {
+            animation: fx-pop 1.5s forwards;
+        }
+
+        @keyframes fx-pop {
+            0% {
+                opacity: 0;
+                transform: scale(0.5) rotate(-15deg);
+            }
+
+            20% {
+                opacity: 1;
+                transform: scale(1.2) rotate(0deg);
+            }
+
+            80% {
+                opacity: 1;
+                transform: scale(1) translateY(-20px);
+            }
+
+            100% {
+                opacity: 0;
+                transform: scale(0.8) translateY(-50px);
+            }
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: translateX(-50%) translateY(0);
+            }
+
+            50% {
+                transform: translateX(-50%) translateY(-5px);
+            }
+        }
+
+        /* Suspicion Crystal */
+        .sus-crystal {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 20px;
+            height: 20px;
+            background: #10b981;
+            /* Default Safe */
+            border: 2px solid #1e293b;
+            transform: rotate(45deg);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+            transition: background-color 0.3s;
+        }
+
+        /* Emotional Responses */
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36, .07, .19, .97) both infinite;
+            transform: translate3d(0, 0, 0);
+        }
+
+        @keyframes shake {
+
+            10%,
+            90% {
+                transform: translate3d(-1px, 0, 0);
+            }
+
+            20%,
+            80% {
+                transform: translate3d(2px, 0, 0);
+            }
+
+            30%,
+            50%,
+            70% {
+                transform: translate3d(-4px, 0, 0);
+            }
+
+            40%,
+            60% {
+                transform: translate3d(4px, 0, 0);
+            }
+        }
+
+        .high-suspicion .avatar-frame {
+            box-shadow: 0 0 15px #ef4444;
+            /* Red Glow */
+            border-color: #ef4444;
+        }
+
+        .sweat-drop {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 15px;
+            height: 20px;
+            background: #cbd5e1;
+            border-radius: 0 50% 50% 50%;
+            transform: rotate(45deg);
+            opacity: 0;
+            animation: sweat 2s infinite;
+        }
+
+        .high-suspicion .sweat-drop {
+            opacity: 1;
+        }
+
+        @keyframes sweat {
+            0% {
+                transform: rotate(45deg) translateY(0);
+                opacity: 0;
+            }
+
+            50% {
+                opacity: 1;
+            }
+
+            100% {
+                transform: rotate(45deg) translateY(10px);
+                opacity: 0;
+            }
         }
     </style>
 </head>
 
 <body class="min-h-screen flex flex-col">
-
     <!-- Navbar -->
     <nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -98,7 +462,6 @@
                 <div class="flex items-center gap-6">
                     <!-- Playground (Active) -->
                     <a href="/" class="text-white font-medium border-b-2 border-indigo-500 px-1 py-4">Playground</a>
-
                     <!-- Arena (Locked) -->
                     <div class="relative group">
                         <button disabled class="flex items-center gap-1.5 text-slate-500 cursor-not-allowed px-1 py-4">
@@ -114,11 +477,9 @@
                             Coming Soon
                         </div>
                     </div>
-
                     <!-- Record -->
                     <a href="/record"
                         class="text-slate-400 hover:text-white font-medium px-1 py-4 transition-colors">Record</a>
-
                     <!-- Settings -->
                     <button onclick="openSettingsModal()"
                         class="flex items-center gap-1.5 text-slate-400 hover:text-white font-medium px-1 py-4 transition-colors">
@@ -138,18 +499,14 @@
 
     <!-- Main Content -->
     <main class="flex-grow container mx-auto px-4 py-8 max-w-7xl">
-
         <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
-
             <!-- Left Column: Controls & Status -->
             <div class="lg:col-span-4 space-y-6">
-
                 <!-- Status Card -->
                 <div class="glass-panel rounded-xl p-6 relative overflow-hidden group">
                     <div
                         class="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl -mr-16 -mt-16 transition-all group-hover:bg-indigo-500/20">
                     </div>
-
                     <h2 class="text-lg font-semibold text-white mb-4 flex items-center gap-2">
                         <svg class="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -157,7 +514,6 @@
                         </svg>
                         Game Status
                     </h2>
-
                     <div id="gameStatus" class="space-y-4">
                         <div class="flex items-center justify-between">
                             <span class="text-slate-400 text-sm">Current State</span>
@@ -181,7 +537,6 @@
                         </svg>
                         Start Game
                     </h2>
-
                     <div class="space-y-4">
                         <!-- Player Info -->
                         <div class="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
@@ -195,7 +550,6 @@
                                     <p class="text-slate-400 text-xs">Player 1 vs 5 AI opponents</p>
                                 </div>
                             </div>
-
                             <!-- Role Info -->
                             <div id="roleInfoContainer"
                                 class="hidden mt-3 p-3 bg-slate-900/50 rounded-lg border border-slate-700">
@@ -203,7 +557,6 @@
                                 </h3>
                                 <p class="text-sm text-slate-300" id="roleInfoText">Waiting for game start...</p>
                             </div>
-
                         </div>
 
                         <!-- Weekly Games Info -->
@@ -221,14 +574,10 @@
                         <div class="flex gap-4">
                             <button id="startButton"
                                 class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg shadow-sm transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                                onclick="startGame()">
-                                Start New Game
-                            </button>
+                                onclick="startGame()">Start New Game</button>
                             <button id="stopButton"
                                 class="hidden px-4 py-3 bg-red-600 hover:bg-red-500 text-white font-medium rounded-lg shadow-sm transition-all"
-                                onclick="stopGame()">
-                                Stop Game
-                            </button>
+                                onclick="stopGame()">Stop Game</button>
                         </div>
                         <p id="configStatusMessage" class="text-center text-slate-400 text-sm mt-4 h-5"></p>
                     </div>
@@ -246,61 +595,181 @@
                         <!-- Dynamic buttons injected here -->
                     </div>
                 </div>
-
             </div>
 
             <!-- Right Column: Logs & Reasoning -->
             <div class="lg:col-span-8 space-y-6">
+                <!-- Manga Visual Board -->
+                <div class="glass-panel rounded-xl p-1 overflow-hidden relative"> <!-- p-1 for slim border -->
 
-                <!-- 6-Person Seating Chart -->
-                <div class="glass-panel rounded-xl p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h2 class="text-sm font-bold text-slate-200 uppercase tracking-wider flex items-center gap-2">
-                            <svg class="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z">
-                                </path>
-                            </svg>
-                            Game Interaction
-                        </h2>
-                        <div class="flex items-center gap-2">
-                            <span class="text-xs text-slate-500">Phase:</span>
-                            <span id="currentPhase"
-                                class="text-slate-300 font-mono text-xs px-2 py-1 bg-slate-800 rounded">Waiting...</span>
-                        </div>
-                    </div>
-
-                    <!-- Modern Game Table Layout -->
-                    <div
-                        class="relative h-[220px] bg-slate-900/30 rounded-xl border border-slate-700/50 flex items-center justify-center overflow-hidden">
-
-                        <!-- Center Info / Table (Quest & Vote Track) -->
+                    <!-- Header Overlay -->
+                    <!-- Header Overlay -->
+                    <div class="absolute top-4 left-4 z-30 pointer-events-none flex items-start gap-3">
                         <div
-                            class="absolute z-10 w-[480px] h-48 rounded-2xl border border-slate-600 bg-slate-800/95 backdrop-blur-md flex flex-col items-center justify-center p-5 shadow-2xl">
+                            class="flex items-center gap-2 bg-slate-900/80 backdrop-blur px-3 py-2 rounded-lg border border-slate-700 h-full">
+                            <span class="w-2 h-2 rounded-full bg-green-500 animate-pulse"></span>
+                            <span class="text-xs font-bold text-slate-200 uppercase tracking-widest">Live Table</span>
+                        </div>
 
-                            <!-- Quest Track -->
-                            <div class="flex items-center gap-4 mb-5" id="questTrack">
-                                <!-- Will be populated by JS -->
-                                <div class="text-slate-500 text-sm">Loading Quest Track...</div>
-                            </div>
+                        <!-- Current Phase -->
+                        <div
+                            class="bg-black/40 backdrop-blur-md border border-white/10 rounded-lg px-4 py-1 text-center min-w-[120px]">
+                            <div class="text-[9px] text-slate-400 uppercase tracking-widest font-bold mb-0.5">Current
+                                Phase</div>
+                            <div id="visualPhaseText" class="text-sm text-white font-bold text-shadow-sm">WAITING</div>
+                        </div>
 
-                            <!-- Vote Track -->
-                            <div class="w-full px-4">
-                                <div class="flex justify-between items-center relative" id="voteTrack">
-                                    <div class="absolute h-0.5 bg-slate-700 w-full top-1/2 -z-10"></div>
-                                    <!-- Will be populated by JS -->
+                        <!-- Proposed Team (Hidden by default) -->
+                        <div id="proposedTeamContainer"
+                            class="hidden bg-indigo-900/60 backdrop-blur-md border border-indigo-400/30 rounded-lg px-4 py-1 text-center min-w-[120px] transition-all duration-300">
+                            <div class="text-[9px] text-indigo-300 uppercase tracking-widest font-bold mb-0.5">Proposed
+                                Team</div>
+                            <div id="proposedTeamText"
+                                class="text-sm text-white font-bold text-shadow-sm tracking-wide"></div>
+                        </div>
+                    </div>
+
+                    <!-- 3D Scene Container -->
+                    <div class="manga-board-container" id="mangaBoard">
+
+                        <!-- FX Layer -->
+                        <div id="fxLayer"
+                            class="absolute inset-0 z-50 pointer-events-none flex items-center justify-center"></div>
+
+                        <!-- 1. The Table -->
+                        <div class="game-table flex flex-col items-center justify-center p-4">
+                            <!-- Table Content (Tracks) -->
+                            <div class="w-full h-full flex flex-col justify-between py-2">
+
+                                <!-- Quest Track (Circles) -->
+                                <div class="flex justify-center gap-3" id="visualQuestTrack">
+                                    <!-- Populated by JS -->
+                                    <div class="w-8 h-8 rounded-full border-2 border-slate-600 bg-slate-800/50"></div>
+                                    <div class="w-8 h-8 rounded-full border-2 border-slate-600 bg-slate-800/50"></div>
+                                    <div class="w-8 h-8 rounded-full border-2 border-slate-600 bg-slate-800/50"></div>
+                                    <div class="w-8 h-8 rounded-full border-2 border-slate-600 bg-slate-800/50"></div>
+                                    <div class="w-8 h-8 rounded-full border-2 border-slate-600 bg-slate-800/50"></div>
                                 </div>
-                                <div class="flex justify-between text-[10px] text-slate-500 mt-1 px-1">
-                                    <span>1</span><span>2</span><span>3</span><span>4</span><span class="text-red-400">5
-                                        (Fail)</span>
+
+                                <!-- Vote Track (Bar) -->
+                                <div class="w-full px-4">
+                                    <div class="text-[9px] text-slate-400 text-center uppercase tracking-wider mb-1">
+                                        Rejection Track</div>
+                                    <div class="flex justify-between items-center relative h-2 bg-slate-900/50 rounded-full"
+                                        id="visualVoteTrack">
+                                        <!-- Markers -->
+                                        <div class="w-3 h-3 rounded-full bg-slate-600 z-10"></div>
+                                        <div class="w-3 h-3 rounded-full bg-slate-600 z-10"></div>
+                                        <div class="w-3 h-3 rounded-full bg-slate-600 z-10"></div>
+                                        <div class="w-3 h-3 rounded-full bg-slate-600 z-10"></div>
+                                        <div class="w-3 h-3 rounded-full bg-red-900/80 border border-red-500 z-10">
+                                        </div>
+
+                                        <!-- Connection Line -->
+                                        <div class="absolute top-1/2 left-0 w-full h-0.5 bg-slate-700 -translate-y-1/2">
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="text-center text-[10px] text-slate-500 mt-1 uppercase tracking-wider">Vote
-                                    Track (Rejections)</div>
+
                             </div>
                         </div>
 
+                        <!-- 2. Player Slots (P0-P5) -->
+
+                        <!-- P0: User (Me) -->
+                        <div class="player-slot slot-p0" id="slot-0">
+                            <!-- Narrative Bubble -->
+                            <div class="speech-bubble" id="bubble-0">I think we should trust Merlin...</div>
+                            <div class="action-indicator">!</div>
+
+                            <div class="avatar-frame">
+                                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Merlin" class="avatar-img"
+                                    alt="Avatar">
+                                <div class="sus-crystal bg-emerald-500"></div>
+                            </div>
+                            <div
+                                class="mt-2 px-2 py-0.5 bg-slate-800/90 rounded text-[10px] font-bold text-white border border-slate-600 shadow-lg">
+                                YOU</div>
+                        </div>
+
+                        <!-- P1 -->
+                        <div class="player-slot slot-p1" id="slot-1">
+                            <div class="speech-bubble" id="bubble-1">...</div>
+                            <div class="action-indicator">!</div>
+                            <div class="avatar-frame">
+                                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Percival" class="avatar-img"
+                                    alt="Avatar">
+                                <div class="sus-crystal bg-emerald-500"></div>
+                            </div>
+                            <div
+                                class="mt-2 px-2 py-0.5 bg-slate-800/90 rounded text-[10px] text-slate-300 border border-slate-600">
+                                Bob</div>
+                        </div>
+
+                        <!-- P2 -->
+                        <div class="player-slot slot-p2" id="slot-2">
+                            <div class="speech-bubble" id="bubble-2">...</div>
+                            <div class="action-indicator">!</div>
+                            <div class="avatar-frame">
+                                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Morgana" class="avatar-img"
+                                    alt="Avatar">
+                                <div class="sus-crystal bg-amber-500"></div>
+                            </div>
+                            <div
+                                class="mt-2 px-2 py-0.5 bg-slate-800/90 rounded text-[10px] text-slate-300 border border-slate-600">
+                                Charlie</div>
+                        </div>
+
+                        <!-- P3 (Head) -->
+                        <div class="player-slot slot-p3" id="slot-3">
+                            <div class="speech-bubble" id="bubble-3">...</div>
+                            <div class="action-indicator">!</div>
+                            <div class="avatar-frame">
+                                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Mordred" class="avatar-img"
+                                    alt="Avatar">
+                                <div class="sus-crystal bg-emerald-500"></div>
+                            </div>
+                            <div
+                                class="mt-2 px-2 py-0.5 bg-slate-800/90 rounded text-[10px] text-slate-300 border border-slate-600 shadow-lg">
+                                Diana</div>
+                        </div>
+
+                        <!-- P4 -->
+                        <div class="player-slot slot-p4" id="slot-4">
+                            <div class="speech-bubble" id="bubble-4">...</div>
+                            <div class="action-indicator">!</div>
+                            <div class="avatar-frame">
+                                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Arthur" class="avatar-img"
+                                    alt="Avatar">
+                                <div class="sus-crystal bg-red-500"></div>
+                            </div>
+                            <div
+                                class="mt-2 px-2 py-0.5 bg-slate-800/90 rounded text-[10px] text-slate-300 border border-slate-600">
+                                Eve</div>
+                        </div>
+
+                        <!-- P5 -->
+                        <div class="player-slot slot-p5" id="slot-5">
+                            <div class="speech-bubble" id="bubble-5">...</div>
+                            <div class="action-indicator">!</div>
+                            <div class="avatar-frame">
+                                <img src="https://api.dicebear.com/7.x/adventurer/svg?seed=Lancelot" class="avatar-img"
+                                    alt="Avatar">
+                                <div class="sus-crystal bg-emerald-500"></div>
+                            </div>
+                            <div
+                                class="mt-2 px-2 py-0.5 bg-slate-800/90 rounded text-[10px] text-slate-300 border border-slate-600">
+                                Frank</div>
+                        </div>
                     </div>
+
                 </div>
+
+                <!-- Hidden Original Elements to prevent JS errors (will be removed in cleanup later) -->
+                <div id="questTrack" class="hidden"></div>
+                <div id="voteTrack" class="hidden"></div>
+                <div id="currentPhase" class="hidden"></div>
+
 
                 <!-- Suspicion Heatmap (Hidden) -->
                 <div class="hidden glass-panel rounded-xl p-6">
@@ -318,12 +787,12 @@
                         <div class="flex items-center gap-2">
                             <span class="text-xs text-slate-500">AI Trust Analysis</span>
                             <div class="flex items-center gap-1 text-xs">
-                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span>
-                                <span class="text-slate-500">Safe</span>
-                                <span class="w-2 h-2 rounded-full bg-amber-500 ml-2"></span>
-                                <span class="text-slate-500">Suspect</span>
-                                <span class="w-2 h-2 rounded-full bg-red-500 ml-2"></span>
-                                <span class="text-slate-500">Evil</span>
+                                <span class="w-2 h-2 rounded-full bg-emerald-500"></span><span
+                                    class="text-slate-500">Safe</span>
+                                <span class="w-2 h-2 rounded-full bg-amber-500 ml-2"></span><span
+                                    class="text-slate-500">Suspect</span>
+                                <span class="w-2 h-2 rounded-full bg-red-500 ml-2"></span><span
+                                    class="text-slate-500">Evil</span>
                             </div>
                         </div>
                     </div>
@@ -419,13 +888,9 @@
                         <p id="authError" class="text-red-400 text-sm hidden"></p>
                         <div class="flex gap-3">
                             <button onclick="handleLogin()"
-                                class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors">
-                                Login
-                            </button>
+                                class="flex-1 py-3 bg-indigo-600 hover:bg-indigo-500 text-white font-medium rounded-lg transition-colors">Login</button>
                             <button onclick="handleRegister()"
-                                class="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors">
-                                Register
-                            </button>
+                                class="flex-1 py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors">Register</button>
                         </div>
                     </div>
                 </div>
@@ -433,7 +898,7 @@
                 <!-- User Info (shown when logged in) -->
                 <div id="userInfo" class="hidden space-y-4">
                     <div class="p-4 bg-slate-800/50 rounded-lg border border-slate-700">
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 mb-4">
                             <div class="w-12 h-12 bg-indigo-500/20 rounded-full flex items-center justify-center">
                                 <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor"
                                     viewBox="0 0 24 24">
@@ -448,6 +913,19 @@
                                         class="hidden px-2 py-0.5 bg-gradient-to-r from-amber-500 to-yellow-500 text-black text-xs font-bold rounded">VIP</span>
                                     <span id="userWeeklyGames" class="text-slate-400 text-xs">0/1 games this week</span>
                                 </div>
+                            </div>
+                        </div>
+
+                        <!-- Display Name Edit -->
+                        <div class="border-t border-slate-700 pt-3">
+                            <label
+                                class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide">Display
+                                Name (In Game)</label>
+                            <div class="flex gap-2">
+                                <input type="text" id="userDisplayName" class="input-dark flex-1 text-sm py-1.5"
+                                    placeholder="Enter name (e.g. Alice)">
+                                <button onclick="updateProfile()"
+                                    class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors">Save</button>
                             </div>
                         </div>
                     </div>

@@ -151,7 +151,18 @@ class SupabaseClient:
             print(f"[Supabase] Failed to create user profile: {e}")
             return False
 
-    def get_weekly_game_count(self, user_id):
+    def update_user_profile(self, user_id, updates):
+        """Update user profile (e.g., display_name)."""
+        if not self.client:
+            return False
+        try:
+            self.client.table('user_profiles').update(updates).eq('user_id', user_id).execute()
+            print(f"[Supabase] User profile updated for {user_id}")
+            return True
+        except Exception as e:
+            print(f"[Supabase] Failed to update user profile: {e}")
+            return False
+
         """Get the number of games played this week by a user."""
         if not self.client:
             return 0
