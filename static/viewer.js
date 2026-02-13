@@ -232,7 +232,7 @@ function displayRounds() {
                         <div style="margin-top: 0.75rem;">
                             <strong>Team:</strong>
                             <div class="team-list">
-                                ${round.mission.team.map(name => `<span class="player-tag">${name}</span>`).join('')}
+                                ${(round.mission.team || round.mission_team || []).map(name => `<span class="player-tag">${name}</span>`).join('')}
                             </div>
                         </div>
 

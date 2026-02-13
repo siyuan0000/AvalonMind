@@ -98,15 +98,19 @@ class GameLogger:
 
     def log_mission(self, round_log, team, actions, success):
         """Log mission execution and result."""
-        # Extract team member names
-        team_names = [player.name for player in team]
+        # Ensure team is a list of player names
+        team_names = team if isinstance(team, list) else [team]
         
         round_log['mission'] = {
-            'team': team_names,  # Store player names instead of player objects
-            'team_members': team_names,  # Explicit team members field
+            'team': team_names,
             'actions': actions,
             'success': success
         }
+        
+        # Also store team info at round level for easier access
+        round_log['mission_team'] = team_names
+        round_log['mission_result'] = 'SUCCESS' if success else 'FAIL'
+        
         # Mission completion closes the round timeline
         self.finalize_round(round_log)
 

@@ -373,7 +373,18 @@ function renderDetailLog(data) {
         // Get Mission Data
         const mission = round.mission || {};
         const leader = approvedProposal.leader || 'Unknown';
-        const team = mission.team || approvedProposal.final_team || approvedProposal.initial_team || [];
+        
+        // Get team members - prioritize mission team, then fall back to proposal teams
+        let team = [];
+        if (mission.team && Array.isArray(mission.team) && mission.team.length > 0) {
+            team = mission.team;
+        } else if (round.mission_team && Array.isArray(round.mission_team) && round.mission_team.length > 0) {
+            team = round.mission_team;
+        } else if (approvedProposal.final_team && Array.isArray(approvedProposal.final_team) && approvedProposal.final_team.length > 0) {
+            team = approvedProposal.final_team;
+        } else if (approvedProposal.initial_team && Array.isArray(approvedProposal.initial_team) && approvedProposal.initial_team.length > 0) {
+            team = approvedProposal.initial_team;
+        }
         const votes = approvedProposal.votes || {};
 
         let resultStr = '';
