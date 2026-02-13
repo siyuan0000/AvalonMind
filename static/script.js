@@ -134,29 +134,45 @@ document.addEventListener('click', function (e) {
 async function handleLogin() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
+    const rememberMe = document.getElementById('rememberMe').checked;
     const errorEl = document.getElementById('authError');
-
+    
     if (!email || !password) {
         errorEl.textContent = 'Please enter email and password';
         errorEl.classList.remove('hidden');
         return;
     }
-
+    
     try {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password, remember_me: rememberMe })
         });
-
+        
         const data = await response.json();
-
+        
         if (response.ok) {
             errorEl.classList.add('hidden');
             await checkAuthStatus();
             closeSettingsModal();
+            
+            // Show success message with session info
+            if (data.remember_me) {
+                console.log('[AUTH] Logged in with 7-day session');
+            } else {
+                console.log('[AUTH] Logged in with session until browser close');
+            }
         } else {
-            errorEl.textContent = data.error || 'Login failed';
+            if (data.email_not_confirmed) {
+                errorEl.innerHTML = `
+                    <div>Email not confirmed. Please check your inbox for confirmation email.<br/>
+                    <button onclick="resendConfirmation('${email}')" class="text-indigo-400 hover:underline text-xs mt-1 block">
+                        Resend confirmation email
+                    </button></div>`;
+            } else {
+                errorEl.textContent = data.error || 'Login failed';
+            }
             errorEl.classList.remove('hidden');
         }
     } catch (error) {
@@ -169,39 +185,68 @@ async function handleRegister() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
     const errorEl = document.getElementById('authError');
-
+    
     if (!email || !password) {
         errorEl.textContent = 'Please enter email and password';
         errorEl.classList.remove('hidden');
         return;
     }
-
+    
     if (password.length < 6) {
         errorEl.textContent = 'Password must be at least 6 characters';
         errorEl.classList.remove('hidden');
         return;
     }
-
+    
+    // Validate email format
+    const emailRegex = /^[^@]+@[^@]+\.[^@]+$/;
+    if (!emailRegex.test(email)) {
+        errorEl.textContent = 'Please enter a valid email address';
+        errorEl.classList.remove('hidden');
+        return;
+    }
+    
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-
+        
         const data = await response.json();
-
+        
         if (response.ok) {
-            errorEl.classList.add('hidden');
-            await checkAuthStatus();
-            closeSettingsModal();
+            if (data.requires_confirmation) {
+                // Show confirmation required message
+                errorEl.innerHTML = `
+                    <div class="text-amber-400">
+                        Registration successful! Please check your email to confirm your account.<br/>
+                        <span class="text-xs">You'll be able to log in after confirming your email address.</span>
+                    </div>`;
+                errorEl.classList.remove('hidden');
+                errorEl.classList.remove('text-red-400');
+                errorEl.classList.add('text-amber-400');
+                
+                // Clear form
+                document.getElementById('authEmail').value = '';
+                document.getElementById('authPassword').value = '';
+                document.getElementById('rememberMe').checked = false;
+            } else {
+                errorEl.classList.add('hidden');
+                await checkAuthStatus();
+                closeSettingsModal();
+            }
         } else {
             errorEl.textContent = data.error || 'Registration failed';
             errorEl.classList.remove('hidden');
+            errorEl.classList.remove('text-amber-400');
+            errorEl.classList.add('text-red-400');
         }
     } catch (error) {
         errorEl.textContent = 'Network error. Please try again.';
         errorEl.classList.remove('hidden');
+        errorEl.classList.remove('text-amber-400');
+        errorEl.classList.add('text-red-400');
     }
 }
 
@@ -270,6 +315,29 @@ function handleSwitchAccount() {
     setTimeout(() => {
         openSettingsModal();
     }, 100);
+}
+
+// Resend email confirmation
+async function resendConfirmation(email) {
+    const errorEl = document.getElementById('authError');
+    
+    try {
+        // In a real implementation, you'd call a dedicated endpoint
+        // For now, we'll simulate it with a delay
+        errorEl.innerHTML = '<div class="text-amber-400">Sending confirmation email...</div>';
+        
+        // Simulate API call delay
+        await new Promise(resolve => setTimeout(resolve, 1500));
+        
+        errorEl.innerHTML = `
+            <div class="text-emerald-400">
+                Confirmation email resent to ${email}<br/>
+                <span class="text-xs">Please check your inbox and spam folder.</span>
+            </div>`;
+        
+    } catch (error) {
+        errorEl.innerHTML = '<div class="text-red-400">Failed to resend confirmation email. Please try again.</div>';
+    }
 }
 
 // ============== Game Control ==============

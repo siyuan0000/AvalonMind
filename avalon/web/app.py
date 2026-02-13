@@ -410,13 +410,18 @@ def get_current_user_email():
 
 @app.route('/api/auth/register', methods=['POST'])
 def auth_register():
-    """Register a new user."""
+    """Register a new user - requires email confirmation."""
     data = request.json
     email = data.get('email')
     password = data.get('password')
     
     if not email or not password:
         return jsonify({'error': 'Email and password are required'}), 400
+    
+    # Validate email format
+    import re
+    if not re.match(r'^[^@]+@[^@]+\.[^@]+$', email):
+        return jsonify({'error': 'Invalid email format'}), 400
     
     user, error = supabase.sign_up(email, password)
     
@@ -427,12 +432,11 @@ def auth_register():
         # Create user profile
         supabase.create_user_profile(user.id, email)
         
-        # Set session
-        session['user_id'] = user.id
-        session['email'] = email
-        
+        # Don't set session yet - user must confirm email first
+        # Instead, return success message with confirmation requirement
         return jsonify({
-            'message': 'Registration successful',
+            'message': 'Registration successful. Please check your email to confirm your account before logging in.',
+            'requires_confirmation': True,
             'user': {
                 'id': user.id,
                 'email': email
@@ -443,10 +447,11 @@ def auth_register():
 
 @app.route('/api/auth/login', methods=['POST'])
 def auth_login():
-    """Login an existing user."""
+    """Login an existing user - only works for confirmed accounts."""
     data = request.json
     email = data.get('email')
     password = data.get('password')
+    remember_me = data.get('remember_me', False)  # New parameter
     
     if not email or not password:
         return jsonify({'error': 'Email and password are required'}), 400
@@ -457,21 +462,41 @@ def auth_login():
         return jsonify({'error': error}), 400
     
     if user:
+        # Check if email is confirmed
+        if not getattr(user, 'email_confirmed_at', None):
+            return jsonify({
+                'error': 'Please confirm your email address before logging in.',
+                'email_not_confirmed': True
+            }), 400
+        
         # Ensure user profile exists
         profile = supabase.get_user_profile(user.id)
         if not profile:
             supabase.create_user_profile(user.id, email)
         
-        # Set session
+        # Set session with expiration
         session['user_id'] = user.id
         session['email'] = email
+        session['logged_in_at'] = datetime.utcnow().isoformat()
+        
+        # Set session lifetime
+        if remember_me:
+            # Remember for 7 days
+            session.permanent = True
+            app.permanent_session_lifetime = timedelta(days=7)
+        else:
+            # Session expires when browser closes
+            session.permanent = False
+            app.permanent_session_lifetime = timedelta(hours=24)
         
         return jsonify({
             'message': 'Login successful',
             'user': {
                 'id': user.id,
-                'email': email
-            }
+                'email': email,
+                'display_name': profile.get('display_name') if profile else None
+            },
+            'remember_me': remember_me
         })
     
     return jsonify({'error': 'Login failed'}), 500

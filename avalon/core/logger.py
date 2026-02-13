@@ -98,8 +98,12 @@ class GameLogger:
 
     def log_mission(self, round_log, team, actions, success):
         """Log mission execution and result."""
+        # Extract team member names
+        team_names = [player.name for player in team]
+        
         round_log['mission'] = {
-            'team': team,
+            'team': team_names,  # Store player names instead of player objects
+            'team_members': team_names,  # Explicit team members field
             'actions': actions,
             'success': success
         }
