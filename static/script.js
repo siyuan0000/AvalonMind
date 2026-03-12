@@ -123,6 +123,21 @@ function closeSettingsModal() {
     document.getElementById('settingsModal').classList.add('hidden');
 }
 
+function togglePasswordVisibility() {
+    const pwd = document.getElementById('authPassword');
+    const eyeVisible = document.getElementById('eyeIconVisible');
+    const eyeHidden = document.getElementById('eyeIconHidden');
+    if (pwd.type === 'password') {
+        pwd.type = 'text';
+        eyeVisible.classList.remove('hidden');
+        eyeHidden.classList.add('hidden');
+    } else {
+        pwd.type = 'password';
+        eyeVisible.classList.add('hidden');
+        eyeHidden.classList.remove('hidden');
+    }
+}
+
 // Close modal when clicking outside
 document.addEventListener('click', function (e) {
     const modal = document.getElementById('settingsModal');
@@ -176,7 +191,8 @@ async function handleLogin() {
             errorEl.classList.remove('hidden');
         }
     } catch (error) {
-        errorEl.textContent = 'Network error. Please try again.';
+        console.error('[Login] fetch error:', error);
+        errorEl.textContent = 'Connection failed: ' + (error.message || 'Please check your network and try again.');
         errorEl.classList.remove('hidden');
     }
 }
@@ -243,7 +259,8 @@ async function handleRegister() {
             errorEl.classList.add('text-red-400');
         }
     } catch (error) {
-        errorEl.textContent = 'Network error. Please try again.';
+        console.error('[Register] fetch error:', error);
+        errorEl.textContent = 'Connection failed: ' + (error.message || 'Please check your network and try again.');
         errorEl.classList.remove('hidden');
         errorEl.classList.remove('text-amber-400');
         errorEl.classList.add('text-red-400');

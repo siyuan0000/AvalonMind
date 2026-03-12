@@ -163,6 +163,7 @@ class SupabaseClient:
             print(f"[Supabase] Failed to update user profile: {e}")
             return False
 
+    def get_weekly_game_count(self, user_id):
         """Get the number of games played this week by a user."""
         if not self.client:
             return 0

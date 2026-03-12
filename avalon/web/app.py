@@ -455,58 +455,63 @@ def auth_register():
 @app.route('/api/auth/login', methods=['POST'])
 def auth_login():
     """Login an existing user - only works for confirmed accounts."""
-    data = request.json
-    email = data.get('email')
-    password = data.get('password')
-    remember_me = data.get('remember_me', False)  # New parameter
-    
-    if not email or not password:
-        return jsonify({'error': 'Email and password are required'}), 400
-    
-    user, error = supabase.sign_in(email, password)
-    
-    if error:
-        return jsonify({'error': error}), 400
-    
-    if user:
-        # Check if email is confirmed
-        if not getattr(user, 'email_confirmed_at', None):
+    try:
+        data = request.json
+        email = data.get('email')
+        password = data.get('password')
+        remember_me = data.get('remember_me', False)  # New parameter
+        
+        if not email or not password:
+            return jsonify({'error': 'Email and password are required'}), 400
+        
+        user, error = supabase.sign_in(email, password)
+        
+        if error:
+            return jsonify({'error': error}), 400
+        
+        if user:
+            # Check if email is confirmed
+            if not getattr(user, 'email_confirmed_at', None):
+                return jsonify({
+                    'error': 'Please confirm your email address before logging in.',
+                    'email_not_confirmed': True
+                }), 400
+            
+            # Ensure user profile exists
+            profile = supabase.get_user_profile(user.id)
+            if not profile:
+                supabase.create_user_profile(user.id, email)
+            
+            # Set session with expiration
+            session['user_id'] = user.id
+            session['email'] = email
+            session['logged_in_at'] = datetime.utcnow().isoformat()
+            
+            # Set session lifetime
+            if remember_me:
+                # Remember for 7 days
+                session.permanent = True
+                app.permanent_session_lifetime = timedelta(days=7)
+            else:
+                # Session expires when browser closes
+                session.permanent = False
+                app.permanent_session_lifetime = timedelta(hours=24)
+            
             return jsonify({
-                'error': 'Please confirm your email address before logging in.',
-                'email_not_confirmed': True
-            }), 400
+                'message': 'Login successful',
+                'user': {
+                    'id': user.id,
+                    'email': email,
+                    'display_name': profile.get('display_name') if profile else None
+                },
+                'remember_me': remember_me
+            })
         
-        # Ensure user profile exists
-        profile = supabase.get_user_profile(user.id)
-        if not profile:
-            supabase.create_user_profile(user.id, email)
-        
-        # Set session with expiration
-        session['user_id'] = user.id
-        session['email'] = email
-        session['logged_in_at'] = datetime.utcnow().isoformat()
-        
-        # Set session lifetime
-        if remember_me:
-            # Remember for 7 days
-            session.permanent = True
-            app.permanent_session_lifetime = timedelta(days=7)
-        else:
-            # Session expires when browser closes
-            session.permanent = False
-            app.permanent_session_lifetime = timedelta(hours=24)
-        
-        return jsonify({
-            'message': 'Login successful',
-            'user': {
-                'id': user.id,
-                'email': email,
-                'display_name': profile.get('display_name') if profile else None
-            },
-            'remember_me': remember_me
-        })
-    
-    return jsonify({'error': 'Login failed'}), 500
+        return jsonify({'error': 'Login failed'}), 500
+    except Exception as e:
+        print(f"[auth_login] Unexpected error: {e}")
+        import traceback; traceback.print_exc()
+        return jsonify({'error': f'Server error: {str(e)}'}), 500
 
 @app.route('/api/auth/logout', methods=['POST'])
 def auth_logout():
