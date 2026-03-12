@@ -136,27 +136,27 @@ async function handleLogin() {
     const password = document.getElementById('authPassword').value;
     const rememberMe = document.getElementById('rememberMe').checked;
     const errorEl = document.getElementById('authError');
-    
+
     if (!email || !password) {
         errorEl.textContent = 'Please enter email and password';
         errorEl.classList.remove('hidden');
         return;
     }
-    
+
     try {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password, remember_me: rememberMe })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             errorEl.classList.add('hidden');
             await checkAuthStatus();
             closeSettingsModal();
-            
+
             // Show success message with session info
             if (data.remember_me) {
                 console.log('[AUTH] Logged in with 7-day session');
@@ -185,19 +185,19 @@ async function handleRegister() {
     const email = document.getElementById('authEmail').value;
     const password = document.getElementById('authPassword').value;
     const errorEl = document.getElementById('authError');
-    
+
     if (!email || !password) {
         errorEl.textContent = 'Please enter email and password';
         errorEl.classList.remove('hidden');
         return;
     }
-    
+
     if (password.length < 6) {
         errorEl.textContent = 'Password must be at least 6 characters';
         errorEl.classList.remove('hidden');
         return;
     }
-    
+
     // Validate email format
     const emailRegex = /^[^@]+@[^@]+\.[^@]+$/;
     if (!emailRegex.test(email)) {
@@ -205,16 +205,16 @@ async function handleRegister() {
         errorEl.classList.remove('hidden');
         return;
     }
-    
+
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email, password })
         });
-        
+
         const data = await response.json();
-        
+
         if (response.ok) {
             if (data.requires_confirmation) {
                 // Show confirmation required message
@@ -226,7 +226,7 @@ async function handleRegister() {
                 errorEl.classList.remove('hidden');
                 errorEl.classList.remove('text-red-400');
                 errorEl.classList.add('text-amber-400');
-                
+
                 // Clear form
                 document.getElementById('authEmail').value = '';
                 document.getElementById('authPassword').value = '';
@@ -320,21 +320,21 @@ function handleSwitchAccount() {
 // Resend email confirmation
 async function resendConfirmation(email) {
     const errorEl = document.getElementById('authError');
-    
+
     try {
         // In a real implementation, you'd call a dedicated endpoint
         // For now, we'll simulate it with a delay
         errorEl.innerHTML = '<div class="text-amber-400">Sending confirmation email...</div>';
-        
+
         // Simulate API call delay
         await new Promise(resolve => setTimeout(resolve, 1500));
-        
+
         errorEl.innerHTML = `
             <div class="text-emerald-400">
                 Confirmation email resent to ${email}<br/>
                 <span class="text-xs">Please check your inbox and spam folder.</span>
             </div>`;
-        
+
     } catch (error) {
         errorEl.innerHTML = '<div class="text-red-400">Failed to resend confirmation email. Please try again.</div>';
     }
@@ -505,6 +505,27 @@ function connectToStream() {
         const data = JSON.parse(event.data);
         appendLog(`--- ${data.name} ---`, 'phase');
         updateInteractionStatus(`--- ${data.name} ---`);
+
+        // Handle Mission Phase UI
+        if (data.name === 'Mission Phase') {
+            const visualPhaseText = document.getElementById('visualPhaseText');
+            if (visualPhaseText) visualPhaseText.textContent = 'MISSION PHASE';
+
+            // Show Team Members
+            const proposedTeamContainer = document.getElementById('proposedTeamContainer');
+            const proposedTeamText = document.getElementById('proposedTeamText');
+
+            if (proposedTeamContainer && proposedTeamText && data.team) {
+                // Change label to Mission Team
+                const label = proposedTeamContainer.querySelector('div');
+                if (label) label.textContent = 'Mission Team';
+
+                proposedTeamText.textContent = data.team.join(', ');
+                proposedTeamContainer.classList.remove('hidden');
+                proposedTeamContainer.classList.remove('opacity-0');
+            }
+        }
+
         // Force update to reflect new phase on board
         updateGameStatus();
     });

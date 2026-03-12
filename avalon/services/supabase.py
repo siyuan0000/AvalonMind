@@ -43,7 +43,7 @@ class SupabaseClient:
             data = {
                 'game_id': log_data['game_id'],
                 'timestamp': log_data['timestamp'],
-                'winner': log_data.get('final_result', {}).get('winner', 'Unknown'),
+                'winner': (log_data.get('final_result') or {}).get('winner', 'Unknown'),
                 'log_data': log_data
             }
             

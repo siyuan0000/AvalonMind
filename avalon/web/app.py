@@ -10,6 +10,7 @@ import subprocess
 import secrets
 from threading import Thread, Event, Lock
 from queue import Queue
+from datetime import timedelta
 
 # Core Modules
 from avalon.core.engine import AvalonGame
@@ -26,6 +27,7 @@ app = Flask(__name__, template_folder=template_dir, static_folder=static_dir)
 
 # Session configuration
 app.secret_key = os.environ.get('FLASK_SECRET_KEY') or secrets.token_hex(32)
+app.permanent_session_lifetime = timedelta(days=7)
 
 # Event streaming setup
 event_listeners = []
@@ -177,6 +179,11 @@ def run_game_thread(game_config):
         
         # Set event handler for real-time updates
         controller.set_event_handler(handle_game_event)
+        
+        # Save game to Supabase immediately so started games count towards the weekly limit
+        user_id = running_game.get('user_id')
+        if user_id and controller.logger.game_log:
+            supabase.save_game_log(controller.logger.game_log, user_id)
         
         controller.run_game()
 

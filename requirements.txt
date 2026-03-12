@@ -28,3 +28,4 @@ urllib3==2.5.0
 gunicorn==21.2.0
 flask==3.0.0
 supabase==2.13.0
+httpx[socks]

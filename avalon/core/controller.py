@@ -655,7 +655,9 @@ class GameController:
                     print(f"\n{'─'*60}")
                     print("MISSION PHASE")
                     print(f"{'─'*60}")
-                self.log_action("Mission Phase: Team is executing the mission...")
+                team_str = ", ".join(final_team_names)
+                self.log_action(f"Mission Phase: Team [{team_str}] is executing the mission...")
+                self.log_event('phase', {'name': 'Mission Phase', 'team': final_team_names})
 
                 mission_actions = []
                 mission_actions_dict = {}
