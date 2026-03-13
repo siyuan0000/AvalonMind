@@ -79,20 +79,15 @@ function updateUIForLoggedInUser(user) {
     document.getElementById('userInfo').classList.remove('hidden');
     document.getElementById('userEmail').textContent = user.email;
 
+    // Weekly games counter
     const vipBadge = document.getElementById('vipBadge');
     const userWeeklyGames = document.getElementById('userWeeklyGames');
-
     if (user.is_vip) {
         vipBadge.classList.remove('hidden');
         userWeeklyGames.textContent = 'Unlimited games';
+    } else {
         vipBadge.classList.add('hidden');
         userWeeklyGames.textContent = `${user.weekly_games}/1 games this week`;
-    }
-
-    // Populate display name
-    const displayNameInput = document.getElementById('userDisplayName');
-    if (displayNameInput) {
-        displayNameInput.value = user.display_name || '';
     }
 }
 
@@ -278,54 +273,7 @@ async function handleLogout() {
     }
 }
 
-async function updateProfile() {
-    const displayName = document.getElementById('userDisplayName').value;
-    const saveBtn = document.querySelector('button[onclick="updateProfile()"]');
-    const originalText = saveBtn.textContent;
 
-    if (!displayName) {
-        alert('Please enter a display name');
-        return;
-    }
-
-    saveBtn.disabled = true;
-    saveBtn.textContent = 'Saving...';
-
-    try {
-        const response = await fetch('/api/auth/update_profile', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ display_name: displayName })
-        });
-
-        const data = await response.json();
-
-        if (response.ok) {
-            saveBtn.textContent = 'Saved!';
-            saveBtn.classList.remove('bg-indigo-600', 'hover:bg-indigo-500');
-            saveBtn.classList.add('bg-green-600', 'hover:bg-green-500');
-
-            // Refresh auth status to update UI
-            await checkAuthStatus();
-
-            setTimeout(() => {
-                saveBtn.textContent = originalText;
-                saveBtn.classList.add('bg-indigo-600', 'hover:bg-indigo-500');
-                saveBtn.classList.remove('bg-green-600', 'hover:bg-green-500');
-                saveBtn.disabled = false;
-            }, 2000);
-        } else {
-            alert('Error: ' + data.error);
-            saveBtn.textContent = originalText;
-            saveBtn.disabled = false;
-        }
-    } catch (error) {
-        console.error('Update profile error:', error);
-        alert('Failed to update profile');
-        saveBtn.textContent = originalText;
-        saveBtn.disabled = false;
-    }
-}
 
 function handleSwitchAccount() {
     handleLogout();

@@ -50,7 +50,7 @@ class SupabaseClient:
             if user_id:
                 data['user_id'] = user_id
             
-            self.client.table('game_logs').upsert(data).execute()
+            self.client.table('game_logs').upsert(data, on_conflict='game_id').execute()
             print(f"[Supabase] Game {log_data['game_id']} saved successfully.")
             return True
         except Exception as e:
@@ -152,9 +152,14 @@ class SupabaseClient:
             return False
 
     def update_user_profile(self, user_id, updates):
-        """Update user profile (e.g., display_name)."""
+        """Update user profile (only columns that exist: is_vip)."""
         if not self.client:
             return False
+        # Filter to only schema-valid fields
+        valid_fields = {'is_vip'}
+        updates = {k: v for k, v in updates.items() if k in valid_fields}
+        if not updates:
+            return True  # nothing to update
         try:
             self.client.table('user_profiles').update(updates).eq('user_id', user_id).execute()
             print(f"[Supabase] User profile updated for {user_id}")

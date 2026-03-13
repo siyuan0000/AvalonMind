@@ -132,16 +132,17 @@ def run_game_thread(game_config):
         if not api_key:
             raise ValueError("DeepSeek API Key not found. Please check .env.local")
         
-        # Player 0 (Alice) - Always Human Player (removed observer mode)
-        # Use custom display name if available for authenticated user
+        # Player 0 (Alice) - Always Human Player
+        # Use email prefix as display name if authenticated
         p0_name = player_names[0]
         user_id = running_game.get('user_id')
         if user_id:
-            profile = supabase.get_user_profile(user_id)
-            if profile and profile.get('display_name'):
-                p0_name = profile.get('display_name')
+            email = supabase.get_user_profile(user_id)
+            # Use email from session as friendly name
+            session_email = running_game.get('user_email', '')
+            if session_email:
+                p0_name = session_email.split('@')[0]
                 player_names[0] = p0_name
-                # Update in game instance too if names were already assigned
                 if game.players:
                     game.players[0].name = p0_name
         
@@ -235,6 +236,7 @@ def start_game():
         return jsonify({'error': 'Game is already running'}), 400
 
     # Reset running game state with user_id
+    user_email = get_current_user_email()
     running_game = {
         'is_running': True,
         'game_id': None,
@@ -244,7 +246,8 @@ def start_game():
         'input_event': Event(),
         'input_response': None,
         'current_action': '',
-        'user_id': user_id  # Track user for this game
+        'user_id': user_id,       # Track user for this game
+        'user_email': user_email   # For display name (email prefix)
     }
 
     # Start game in a separate thread
@@ -501,8 +504,7 @@ def auth_login():
                 'message': 'Login successful',
                 'user': {
                     'id': user.id,
-                    'email': email,
-                    'display_name': profile.get('display_name') if profile else None
+                    'email': email
                 },
                 'remember_me': remember_me
             })
@@ -521,23 +523,8 @@ def auth_logout():
 
 @app.route('/api/auth/update_profile', methods=['POST'])
 def update_profile():
-    """Update user profile."""
-    user_id = get_current_user_id()
-    if not user_id:
-        return jsonify({'error': 'Unauthorized'}), 401
-    
-    data = request.json
-    display_name = data.get('display_name')
-    
-    if not display_name:
-        return jsonify({'error': 'Display name is required'}), 400
-        
-    success = supabase.update_user_profile(user_id, {'display_name': display_name})
-    
-    if success:
-        return jsonify({'message': 'Profile updated successfully'})
-    else:
-        return jsonify({'error': 'Failed to update profile'}), 500
+    """Update user profile - only is_vip is a valid editable field in current schema."""
+    return jsonify({'error': 'Profile updates not supported in current schema'}), 404
 
 @app.route('/api/auth/me')
 def auth_me():
@@ -556,7 +543,6 @@ def auth_me():
         'user': {
             'id': user_id,
             'email': email,
-            'display_name': profile.get('display_name') if profile else None,
             'is_vip': profile.get('is_vip', False) if profile else False,
             'weekly_games': weekly_count
         }

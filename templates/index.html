@@ -951,45 +951,32 @@
                             </div>
                         </div>
 
-                        <!-- Display Name Edit -->
-                        <div class="border-t border-slate-700 pt-3">
-                            <label
-                                class="block text-xs font-medium text-slate-400 mb-1.5 uppercase tracking-wide">Display
-                                Name (In Game)</label>
-                            <div class="flex gap-2">
-                                <input type="text" id="userDisplayName" class="input-dark flex-1 text-sm py-1.5"
-                                    placeholder="Enter name (e.g. Alice)">
-                                <button onclick="updateProfile()"
-                                    class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold rounded-lg transition-colors">Save</button>
-                            </div>
-                        </div>
-                    </div>
 
-                    <div class="space-y-2">
-                        <button onclick="handleSwitchAccount()"
-                            class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
-                            </svg>
-                            Switch Account
-                        </button>
-                        <button onclick="handleLogout()"
-                            class="w-full py-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium rounded-lg transition-colors border border-red-600/30 flex items-center justify-center gap-2">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                    d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
-                                </path>
-                            </svg>
-                            Logout
-                        </button>
+                        <div class="space-y-2">
+                            <button onclick="handleSwitchAccount()"
+                                class="w-full py-3 bg-slate-700 hover:bg-slate-600 text-white font-medium rounded-lg transition-colors flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"></path>
+                                </svg>
+                                Switch Account
+                            </button>
+                            <button onclick="handleLogout()"
+                                class="w-full py-3 bg-red-600/20 hover:bg-red-600/30 text-red-400 font-medium rounded-lg transition-colors border border-red-600/30 flex items-center justify-center gap-2">
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1">
+                                    </path>
+                                </svg>
+                                Logout
+                            </button>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
 
-    <script src="/static/script.js"></script>
+        <script src="/static/script.js"></script>
 </body>
 
 </html>
