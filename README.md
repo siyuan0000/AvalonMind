@@ -4,6 +4,10 @@
 
 A complete implementation of the Avalon board game (6-player version) where all players are controlled by AI using DeepSeek-R1 via Ollama.
 
+> 🌐 **Live Demo**: Try it at [https://lsyon.onrender.com/](https://lsyon.onrender.com/)
+> If the page seems stuck on loading, wait 1–2 minutes — the server may be waking up from sleep (free-tier hosting).
+
+
 ## Features
 
 - Full 6-player Avalon game implementation based on the PRD
