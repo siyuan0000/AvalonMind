@@ -773,8 +773,14 @@ async function updateGameStatus() {
                     if (myRole.description) {
                         roleHtml += `<br/><span class="text-slate-400 text-xs">${myRole.description}</span>`;
                     }
-                    if (evilTeam.length > 0) {
-                        roleHtml += `<br/><span class="text-red-400 text-xs">Evil teammates: ${evilTeam.join(', ')}</span>`;
+                    // Only Evil players can see their evil teammates
+                    if (myRole.is_evil) {
+                        const evilTeam = Object.entries(status.player_roles)
+                            .filter(([, r]) => r.is_evil && r.role !== myRole.role)
+                            .map(([name]) => name);
+                        if (evilTeam.length > 0) {
+                            roleHtml += `<br/><span class="text-red-400 text-xs">⚔️ Evil teammates: ${evilTeam.join(', ')}</span>`;
+                        }
                     }
                     roleInfoText.innerHTML = roleHtml;
                     roleInfoText.dataset.populated = '1';
