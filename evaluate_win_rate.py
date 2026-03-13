@@ -24,7 +24,7 @@ def run_evaluation(num_rounds, model_name, verbose=False):
         
         try:
             # Initialize players
-            player_names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank']
+            player_names = ['Chiikawa', 'Hachiware', 'Usagi', 'Neko', 'Risu', 'Kuma']
             game = AvalonGame(player_names)
             
             # Create AI instances

@@ -120,16 +120,14 @@ function closeSettingsModal() {
 
 function togglePasswordVisibility() {
     const pwd = document.getElementById('authPassword');
-    const eyeVisible = document.getElementById('eyeIconVisible');
-    const eyeHidden = document.getElementById('eyeIconHidden');
+    const toggleBtn = document.querySelector('button[onclick="togglePasswordVisibility()"]');
+    
     if (pwd.type === 'password') {
         pwd.type = 'text';
-        eyeVisible.classList.remove('hidden');
-        eyeHidden.classList.add('hidden');
+        if (toggleBtn) toggleBtn.textContent = 'Hide';
     } else {
         pwd.type = 'password';
-        eyeVisible.classList.add('hidden');
-        eyeHidden.classList.remove('hidden');
+        if (toggleBtn) toggleBtn.textContent = 'Show';
     }
 }
 
@@ -796,6 +794,16 @@ async function updateGameStatus() {
                 statusMessage.textContent = parts.length ? parts.join('  ·  ') : 'Game is running...';
             }
 
+            // --- Live Table Game Status ---
+            const gameStatusText = document.getElementById('gameStatusText');
+            if (gameStatusText) {
+                const round = status.current_round != null ? `Round ${status.current_round}` : '';
+                const rejections = status.rejection_count != null ? `Attempt ${status.rejection_count + 1}/5` : '';
+                const leader = status.current_leader ? `Leader: ${status.current_leader}` : '';
+                const parts = [round, rejections, leader].filter(Boolean);
+                gameStatusText.textContent = parts.length ? parts.join('  ·  ') : '-';
+            }
+
             // Check for pending input - only re-render if input type/data has changed
             if (status.pending_input) {
                 const shouldRender = !lastPendingInput ||
@@ -1186,14 +1194,14 @@ async function fetchPlayerRole() {
         const gameStatus = await response.json();
 
         // 1. Try to get role from direct game state (preferred)
-        if (gameStatus.player_roles && gameStatus.player_roles['Alice']) {
-            const alice = gameStatus.player_roles['Alice'];
+        if (gameStatus.player_roles && gameStatus.player_roles['Chiikawa']) {
+            const alice = gameStatus.player_roles['Chiikawa'];
             currentPlayerRole = alice.role;
 
             // Update player name display with role
             const playerNameElement = document.getElementById('playerName');
             if (playerNameElement) {
-                playerNameElement.textContent = `Alice (${currentPlayerRole})`;
+                playerNameElement.textContent = `Chiikawa (${currentPlayerRole})`;
             }
 
             // Update role info text with detailed information from backend
@@ -1214,9 +1222,9 @@ async function fetchPlayerRole() {
             if (logResponse.ok) {
                 const logData = await logResponse.json();
 
-                // Find Alice's role in the player list
+                // Find Chiikawa's role in the player list
                 const players = logData.players || [];
-                const alice = players.find(p => p.name === 'Alice');
+                const alice = players.find(p => p.name === 'Chiikawa');
 
                 if (alice) {
                     currentPlayerRole = alice.role;
@@ -1224,13 +1232,13 @@ async function fetchPlayerRole() {
                     // Update player name display with role
                     const playerNameElement = document.getElementById('playerName');
                     if (playerNameElement) {
-                        playerNameElement.textContent = `Alice (${currentPlayerRole})`;
+                        playerNameElement.textContent = `Chiikawa (${currentPlayerRole})`;
                     }
 
                     // Update role info text with detailed information
                     const roleInfoElement = document.getElementById('roleInfoText');
                     if (roleInfoElement) {
-                        let roleDescription = `You are Alice. You are ${currentPlayerRole}.`;
+                        let roleDescription = `You are Chiikawa. You are ${currentPlayerRole}.`;
 
                         // Add role-specific information
                         if (currentPlayerRole === 'Merlin') {
@@ -1245,7 +1253,7 @@ async function fetchPlayerRole() {
                             roleDescription += ` You have no special information.`;
                         } else if (alice.is_evil) {
                             // Evil roles
-                            const evilTeammates = players.filter(p => p.is_evil && p.name !== 'Alice').map(p => p.name);
+                            const evilTeammates = players.filter(p => p.is_evil && p.name !== 'Chiikawa').map(p => p.name);
                             roleDescription += ` Your evil teammates are: ${JSON.stringify(evilTeammates)}`;
                         }
 

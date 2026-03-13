@@ -124,7 +124,7 @@ def run_game_thread(game_config):
         running_game['status'] = 'initializing'
 
         # Initialize players
-        player_names = ['Alice', 'Bob', 'Charlie', 'Diana', 'Eve', 'Frank']
+        player_names = ['Chiikawa', 'Hachiware', 'Usagi', 'Neko', 'Risu', 'Kuma']
         running_game['players'] = player_names
         game = AvalonGame(player_names)
 
@@ -138,7 +138,7 @@ def run_game_thread(game_config):
         if not api_key:
             raise ValueError("DeepSeek API Key not found. Please check .env.local")
         
-        # Player 0 (Alice) - Always Human Player
+        # Player 0 (Chiikawa) - Always Human Player
         # Use email prefix as display name if authenticated
         p0_name = player_names[0]
         user_id = running_game.get('user_id')
@@ -583,11 +583,11 @@ def get_user_games():
     for game in games:
         log_data = game.get('log_data', {})
         
-        # Find user's role (Alice is player 0)
+        # Find user's role (Chiikawa is player 0)
         user_role = None
         players = log_data.get('players', [])
         for player in players:
-            if player.get('name') == 'Alice':
+            if player.get('name') == 'Chiikawa':
                 user_role = player.get('role')
                 break
         

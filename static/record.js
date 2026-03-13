@@ -320,9 +320,9 @@ function renderGameDetail(data) {
     document.getElementById('detailWinner').textContent = winner;
     document.getElementById('detailWinner').className = `text-lg font-bold ${winner === 'Good' ? 'text-emerald-400' : 'text-red-400'}`;
 
-    // Find user's role (Alice)
+    // Find user's role (Chiikawa)
     const players = data.players || [];
-    const alice = players.find(p => p.name === 'Alice');
+    const alice = players.find(p => p.name === 'Chiikawa');
     document.getElementById('detailUserRole').textContent = alice?.role || 'Unknown';
 
     // Count missions
