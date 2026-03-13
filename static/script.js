@@ -1101,10 +1101,21 @@ function updateSeatingChart(status, currentAction = '') {
             }
         }
 
-        // Update Avatar Seed (Consistency)
+        // Update Avatar Image based on player name
         const img = slot.querySelector('img');
         if (img) {
-            img.src = `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`;
+            // Map player names to local Chiikawa character images
+            const avatarMap = {
+                'Chiikawa': '/static/images/character_1.png',
+                'Hachiware': '/static/images/character_2.png',
+                'Usagi': '/static/images/character_3.png',
+                'Neko': '/static/images/character_4.png',
+                'Risu': '/static/images/character_5.png',
+                'Kuma': '/static/images/character_6.png'
+            };
+            
+            const avatarUrl = avatarMap[name] || `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`;
+            img.src = avatarUrl;
         }
 
         // Active Turn Highlight
