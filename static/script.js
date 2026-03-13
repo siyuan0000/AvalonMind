@@ -275,6 +275,19 @@ async function handleLogout() {
 
 
 
+function toggleAIReasoning() {
+    const content = document.getElementById('aiReasoning');
+    const chevron = document.getElementById('aiReasoningChevron');
+    if (content.style.height === '0px') {
+        content.style.height = '300px';
+        chevron.classList.add('rotate-180');
+    } else {
+        content.style.height = '0px';
+        content.style.overflow = 'hidden';
+        chevron.classList.remove('rotate-180');
+    }
+}
+
 function handleSwitchAccount() {
     handleLogout();
     setTimeout(() => {
