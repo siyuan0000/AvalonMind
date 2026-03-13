@@ -99,9 +99,15 @@ def handle_human_input(player_name, action_type, **kwargs):
         'data': kwargs
     }
     
-    # Clear event and wait for input
+    # Clear event and wait for input (or stop signal)
     running_game['input_event'].clear()
     running_game['input_event'].wait()
+    
+    # If stop was requested, return None so the caller can check stop_requested
+    if current_controller and current_controller.stop_requested:
+        running_game['pending_input'] = None
+        running_game['input_response'] = None
+        return None
     
     # Get response and clear state
     response = running_game['input_response']
@@ -202,9 +208,17 @@ def run_game_thread(game_config):
         running_game['status'] = 'error'
         running_game['error'] = str(e)
         print(f"Game error: {e}")
+        import traceback; traceback.print_exc()
 
     finally:
         running_game['is_running'] = False
+        # If stopped by user, transition cleanly to idle (not error)
+        if running_game['status'] == 'stopping':
+            running_game['status'] = 'idle'
+            running_game['pending_input'] = None
+            running_game['input_response'] = None
+            running_game['current_action'] = ''
+            broadcast_event('log', {'message': 'Game stopped by user.'})
 
 @app.route('/')
 def index():
@@ -267,7 +281,10 @@ def stop_game():
 
     if current_controller:
         current_controller.stop()
-        
+    
+    # Unblock any pending human input wait so the game thread can exit
+    running_game['input_response'] = None
+    running_game['input_event'].set()
     running_game['status'] = 'stopping'
     return jsonify({'message': 'Game stopping...', 'status': 'stopping'})
 

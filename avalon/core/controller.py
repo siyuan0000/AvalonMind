@@ -15,6 +15,11 @@ class HumanPlayer(BaseAI):
         raise NotImplementedError("Human player input should be handled via input_handler")
 
 
+class GameStoppedException(Exception):
+    """Raised when the game is stopped by the user."""
+    pass
+
+
 class GameController:
     """Controls the game flow with AI players."""
 
@@ -109,7 +114,10 @@ class GameController:
     def _get_human_input(self, player, action_type, **kwargs):
         """Request input from human player."""
         if self.input_handler:
-            return self.input_handler(player.name, action_type, **kwargs)
+            result = self.input_handler(player.name, action_type, **kwargs)
+            if self.stop_requested:
+                raise GameStoppedException("Game stopped by user")
+            return result
         return None
 
     def get_player_ai(self, player):
@@ -730,32 +738,38 @@ class GameController:
 
     def run_game(self):
         """Run the complete game."""
-        # Run 5 rounds or until win condition
-        for round_num in range(5):
-            if self.stop_requested:
-                if self.verbose:
-                    print("Game stopped by user.")
-                return
+        try:
+            # Run 5 rounds or until win condition
+            for round_num in range(5):
+                if self.stop_requested:
+                    if self.verbose:
+                        print("Game stopped by user.")
+                    return
 
-            self.run_mission_round(round_num)
+                self.run_mission_round(round_num)
 
-            good_wins = sum(1 for r in self.game.mission_results if r)
-            evil_wins = sum(1 for r in self.game.mission_results if not r)
+                good_wins = sum(1 for r in self.game.mission_results if r)
+                evil_wins = sum(1 for r in self.game.mission_results if not r)
 
-            # Check win conditions
-            if good_wins >= 3:
-                # Good wins 3 missions, assassin phase
-                good_victory = self.run_assassination_phase()
-                self.print_final_result(good_victory)
-                return
-            elif evil_wins >= 3:
-                # Evil wins 3 missions
-                if self.verbose:
-                    print(f"\n{'='*60}")
-                    print("EVIL WINS 3 MISSIONS!")
-                    print(f"{'='*60}")
-                self.print_final_result(False)
-                return
+                # Check win conditions
+                if good_wins >= 3:
+                    # Good wins 3 missions, assassin phase
+                    good_victory = self.run_assassination_phase()
+                    self.print_final_result(good_victory)
+                    return
+                elif evil_wins >= 3:
+                    # Evil wins 3 missions
+                    if self.verbose:
+                        print(f"\n{'='*60}")
+                        print("EVIL WINS 3 MISSIONS!")
+                        print(f"{'='*60}")
+                    self.print_final_result(False)
+                    return
+
+        except GameStoppedException:
+            if self.verbose:
+                print("Game stopped by user (GameStoppedException).")
+            return
 
         # Should not reach here
         self.print_final_result(False)
