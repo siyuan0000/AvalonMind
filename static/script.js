@@ -754,20 +754,47 @@ async function updateGameStatus() {
             gameStarted = true;
             updateSeatingChart('starting');
         } else if (status.status === 'running') {
-            if (statusMessage) statusMessage.textContent = 'Game is running...';
             document.getElementById('stopButton').classList.remove('hidden');
-
-            // Game is running
             gameStarted = true;
             updateSeatingChart('running', status.current_action);
 
+            // --- Role Info: populate from player_roles ---
+            const roleInfoContainer = document.getElementById('roleInfoContainer');
+            const roleInfoText = document.getElementById('roleInfoText');
+            if (roleInfoText && status.player_roles && !roleInfoText.dataset.populated) {
+                const playerNames = Object.keys(status.player_roles);
+                const myRole = playerNames.length > 0 ? status.player_roles[playerNames[0]] : null;
+                if (myRole) {
+                    const evilTeam = Object.entries(status.player_roles)
+                        .filter(([, r]) => r.is_evil && r.role !== myRole.role)
+                        .map(([name]) => name);
+                    let roleHtml = `<span class="font-bold ${myRole.is_evil ? 'text-red-400' : 'text-indigo-400'}">${myRole.role}</span>`;
+                    roleHtml += ` — <span class="${myRole.is_evil ? 'text-red-300' : 'text-emerald-300'}">${myRole.is_evil ? '⚔️ Evil' : '🛡️ Good'}</span>`;
+                    if (myRole.description) {
+                        roleHtml += `<br/><span class="text-slate-400 text-xs">${myRole.description}</span>`;
+                    }
+                    if (evilTeam.length > 0) {
+                        roleHtml += `<br/><span class="text-red-400 text-xs">Evil teammates: ${evilTeam.join(', ')}</span>`;
+                    }
+                    roleInfoText.innerHTML = roleHtml;
+                    roleInfoText.dataset.populated = '1';
+                }
+            }
+
+            // --- Game Status: show round / proposal / speaker ---
+            if (statusMessage) {
+                const round = status.current_round != null ? `Round ${status.current_round}` : '';
+                const rejections = status.rejection_count != null ? `Attempt ${status.rejection_count + 1}/5` : '';
+                const leader = status.current_leader ? `Leader: ${status.current_leader}` : '';
+                const parts = [round, rejections, leader].filter(Boolean);
+                statusMessage.textContent = parts.length ? parts.join('  ·  ') : 'Game is running...';
+            }
+
             // Check for pending input - only re-render if input type/data has changed
             if (status.pending_input) {
-                // Compare with last pending input to avoid unnecessary re-renders
                 const shouldRender = !lastPendingInput ||
                     lastPendingInput.type !== status.pending_input.type ||
                     JSON.stringify(lastPendingInput.data) !== JSON.stringify(status.pending_input.data);
-
                 if (shouldRender) {
                     showInputForm(status.pending_input);
                     lastPendingInput = status.pending_input;
@@ -776,7 +803,6 @@ async function updateGameStatus() {
                 document.getElementById('interactionCard').style.display = 'none';
                 lastPendingInput = null;
             }
-
         } else if (status.status === 'completed') {
             if (statusMessage) statusMessage.innerHTML = `Game completed! <a href="/record" class="text-indigo-400 hover:underline">View records</a>`;
             startButton.disabled = false;
