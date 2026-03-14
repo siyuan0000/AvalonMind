@@ -683,7 +683,7 @@ class GameController:
                     print(f"\nMission Result: {'SUCCESS' if mission_success else 'FAIL'}")
                 
                 fail_count = len(final_team) - success_count
-                self.log_action(f"Mission Result: {'SUCCESS' if mission_success else 'FAIL'} ({fail_count} fail{'s' if fail_count != 1 else ''})")
+                self.log_action(f"Mission Result: {'SUCCESS' if mission_success else 'FAIL'} ")
 
                 # Log mission result
                 self.logger.log_mission(round_log, final_team_names, mission_actions_dict, mission_success)

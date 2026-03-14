@@ -151,6 +151,9 @@ async function handleLogin() {
         return;
     }
 
+    // 立即关闭模态框
+    closeSettingsModal();
+
     try {
         const response = await fetch('/api/auth/login', {
             method: 'POST',
@@ -163,7 +166,6 @@ async function handleLogin() {
         if (response.ok) {
             errorEl.classList.add('hidden');
             await checkAuthStatus();
-            closeSettingsModal();
 
             // Show success message with session info
             if (data.remember_me) {
@@ -172,6 +174,8 @@ async function handleLogin() {
                 console.log('[AUTH] Logged in with session until browser close');
             }
         } else {
+            // 如果登录失败，重新打开模态框显示错误
+            openSettingsModal();
             if (data.email_not_confirmed) {
                 errorEl.innerHTML = `
                     <div>Email not confirmed. Please check your inbox for confirmation email.<br/>
@@ -184,6 +188,8 @@ async function handleLogin() {
             errorEl.classList.remove('hidden');
         }
     } catch (error) {
+        // 如果网络错误，重新打开模态框显示错误
+        openSettingsModal();
         console.error('[Login] fetch error:', error);
         errorEl.textContent = 'Connection failed: ' + (error.message || 'Please check your network and try again.');
         errorEl.classList.remove('hidden');
@@ -215,6 +221,9 @@ async function handleRegister() {
         return;
     }
 
+    // 立即关闭模态框
+    closeSettingsModal();
+
     try {
         const response = await fetch('/api/auth/register', {
             method: 'POST',
@@ -226,32 +235,25 @@ async function handleRegister() {
 
         if (response.ok) {
             if (data.requires_confirmation) {
-                // Show confirmation required message
-                errorEl.innerHTML = `
-                    <div class="text-amber-400">
-                        Registration successful! Please check your email to confirm your account.<br/>
-                        <span class="text-xs">You'll be able to log in after confirming your email address.</span>
-                    </div>`;
-                errorEl.classList.remove('hidden');
-                errorEl.classList.remove('text-red-400');
-                errorEl.classList.add('text-amber-400');
-
-                // Clear form
-                document.getElementById('authEmail').value = '';
-                document.getElementById('authPassword').value = '';
-                document.getElementById('rememberMe').checked = false;
+                // 注册成功需要确认，显示成功消息但不重新打开模态框
+                console.log('[AUTH] Registration successful, email confirmation required');
+                // 可以在这里显示一个全局通知，而不是重新打开模态框
             } else {
+                // 注册成功且不需要确认
                 errorEl.classList.add('hidden');
                 await checkAuthStatus();
-                closeSettingsModal();
             }
         } else {
+            // 如果注册失败，重新打开模态框显示错误
+            openSettingsModal();
             errorEl.textContent = data.error || 'Registration failed';
             errorEl.classList.remove('hidden');
             errorEl.classList.remove('text-amber-400');
             errorEl.classList.add('text-red-400');
         }
     } catch (error) {
+        // 如果网络错误，重新打开模态框显示错误
+        openSettingsModal();
         console.error('[Register] fetch error:', error);
         errorEl.textContent = 'Connection failed: ' + (error.message || 'Please check your network and try again.');
         errorEl.classList.remove('hidden');
@@ -961,17 +963,45 @@ function showInputForm(inputRequest) {
             </div>
         `;
     } else if (type === 'mission_action') {
-        promptP.textContent = `Mission Phase: Choose your action.`;
-        html = `
-            <div class="flex gap-4">
-                <button class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors" onclick="submitAction('SUCCESS')">SUCCESS</button>
-                <button class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors" onclick="submitAction('FAIL')">FAIL</button>
-            </div>
-            <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400 border border-slate-700">
-                <p><strong class="text-slate-300">Role Info:</strong> ${data.role_info}</p>
-                <p class="text-amber-400 mt-1">Note: Good players MUST choose SUCCESS.</p>
-            </div>
-        `;
+        // 检查玩家是否是好人
+        const isGoodPlayer = !data.role_info.includes('(Evil)');
+        
+        if (isGoodPlayer) {
+            // 好人自动选择成功
+            promptP.textContent = `Mission Phase: You are a Good player. Automatically choosing SUCCESS.`;
+            html = `
+                <div class="p-4 bg-emerald-900/30 border border-emerald-700 rounded-lg">
+                    <div class="flex items-center justify-center gap-3">
+                        <svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                        </svg>
+                        <span class="text-emerald-300 font-medium">Automatically choosing SUCCESS</span>
+                    </div>
+                    <p class="text-sm text-emerald-200 mt-2 text-center">Good players must always choose SUCCESS.</p>
+                </div>
+                <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400 border border-slate-700">
+                    <p><strong class="text-slate-300">Role Info:</strong> ${data.role_info}</p>
+                </div>
+            `;
+            
+            // 自动提交成功选择
+            setTimeout(() => {
+                submitAction('SUCCESS');
+            }, 1500);
+        } else {
+            // 坏人可以选择成功或失败
+            promptP.textContent = `Mission Phase: Choose your action.`;
+            html = `
+                <div class="flex gap-4">
+                    <button class="flex-1 py-3 bg-emerald-600 hover:bg-emerald-500 text-white font-bold rounded-lg transition-colors" onclick="submitAction('SUCCESS')">SUCCESS</button>
+                    <button class="flex-1 py-3 bg-red-600 hover:bg-red-500 text-white font-bold rounded-lg transition-colors" onclick="submitAction('FAIL')">FAIL</button>
+                </div>
+                <div class="mt-4 p-3 bg-slate-800/50 rounded-lg text-xs text-slate-400 border border-slate-700">
+                    <p><strong class="text-slate-300">Role Info:</strong> ${data.role_info}</p>
+                    <p class="text-amber-400 mt-1">Note: Good players MUST choose SUCCESS.</p>
+                </div>
+            `;
+        }
     } else if (type === 'assassination') {
         promptP.textContent = `Assassin Phase: Identify Merlin!`;
 
@@ -1104,14 +1134,14 @@ function updateSeatingChart(status, currentAction = '') {
         // Update Avatar Image based on player name
         const img = slot.querySelector('img');
         if (img) {
-            // Map player names to local Chiikawa character images
+            // Map player names to local character images
             const avatarMap = {
-                'Chiikawa': '/static/images/character_1.png',
-                'Hachiware': '/static/images/character_2.png',
-                'Usagi': '/static/images/character_3.png',
-                'Neko': '/static/images/character_4.png',
-                'Risu': '/static/images/character_5.png',
-                'Kuma': '/static/images/character_6.png'
+                'Player 1': '/static/images/character_1.png',
+                'Player 2': '/static/images/character_2.png',
+                'Player 3': '/static/images/character_3.png',
+                'Player 4': '/static/images/character_4.png',
+                'Player 5': '/static/images/character_5.png',
+                'Player 6': '/static/images/character_6.png'
             };
             
             const avatarUrl = avatarMap[name] || `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`;
@@ -1205,14 +1235,14 @@ async function fetchPlayerRole() {
         const gameStatus = await response.json();
 
         // 1. Try to get role from direct game state (preferred)
-        if (gameStatus.player_roles && gameStatus.player_roles['Chiikawa']) {
-            const alice = gameStatus.player_roles['Chiikawa'];
+        if (gameStatus.player_roles && gameStatus.player_roles['Player 1']) {
+            const alice = gameStatus.player_roles['Player 1'];
             currentPlayerRole = alice.role;
 
             // Update player name display with role
             const playerNameElement = document.getElementById('playerName');
             if (playerNameElement) {
-                playerNameElement.textContent = `Chiikawa (${currentPlayerRole})`;
+                playerNameElement.textContent = `Player 1 (${currentPlayerRole})`;
             }
 
             // Update role info text with detailed information from backend
@@ -1233,9 +1263,9 @@ async function fetchPlayerRole() {
             if (logResponse.ok) {
                 const logData = await logResponse.json();
 
-                // Find Chiikawa's role in the player list
+                // Find Player 1's role in the player list
                 const players = logData.players || [];
-                const alice = players.find(p => p.name === 'Chiikawa');
+                const alice = players.find(p => p.name === 'Player 1');
 
                 if (alice) {
                     currentPlayerRole = alice.role;
@@ -1243,13 +1273,13 @@ async function fetchPlayerRole() {
                     // Update player name display with role
                     const playerNameElement = document.getElementById('playerName');
                     if (playerNameElement) {
-                        playerNameElement.textContent = `Chiikawa (${currentPlayerRole})`;
+                        playerNameElement.textContent = `Player 1 (${currentPlayerRole})`;
                     }
 
                     // Update role info text with detailed information
                     const roleInfoElement = document.getElementById('roleInfoText');
                     if (roleInfoElement) {
-                        let roleDescription = `You are Chiikawa. You are ${currentPlayerRole}.`;
+                        let roleDescription = `You are Player 1. You are ${currentPlayerRole}.`;
 
                         // Add role-specific information
                         if (currentPlayerRole === 'Merlin') {
@@ -1264,7 +1294,7 @@ async function fetchPlayerRole() {
                             roleDescription += ` You have no special information.`;
                         } else if (alice.is_evil) {
                             // Evil roles
-                            const evilTeammates = players.filter(p => p.is_evil && p.name !== 'Chiikawa').map(p => p.name);
+                            const evilTeammates = players.filter(p => p.is_evil && p.name !== 'Player 1').map(p => p.name);
                             roleDescription += ` Your evil teammates are: ${JSON.stringify(evilTeammates)}`;
                         }
 
