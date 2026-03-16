@@ -8,13 +8,83 @@ let currentPlayerRole = null;  // Track current player's role
 let gameStarted = false;  // Track if game has started
 let lastPolledAction = ""; // Track last polled action to mix with SSE updates
 
+// Global notification system
+function showGlobalNotification(message, type = 'info') {
+    // Remove any existing notification
+    const existingNotification = document.getElementById('globalNotification');
+    if (existingNotification) {
+        existingNotification.remove();
+    }
+
+    // Create notification element
+    const notification = document.createElement('div');
+    notification.id = 'globalNotification';
+    notification.className = `fixed top-4 right-4 z-[100] px-6 py-4 rounded-lg shadow-lg border transform transition-all duration-300 translate-x-0 opacity-100 ${
+        type === 'success' ? 'bg-emerald-50 border-emerald-200 text-emerald-800' :
+        type === 'error' ? 'bg-red-50 border-red-200 text-red-800' :
+        'bg-blue-50 border-blue-200 text-blue-800'
+    }`;
+    
+    notification.innerHTML = `
+        <div class="flex items-center gap-3">
+            <div class="flex-shrink-0">
+                ${type === 'success' ? '✅' : type === 'error' ? '❌' : 'ℹ️'}
+            </div>
+            <div class="flex-1">
+                <p class="font-medium">${message}</p>
+            </div>
+            <button onclick="this.parentElement.parentElement.remove()" class="text-gray-400 hover:text-gray-600">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                </svg>
+            </button>
+        </div>
+    `;
+    
+    // Add to page
+    document.body.appendChild(notification);
+    
+    // Auto-remove after 8 seconds
+    setTimeout(() => {
+        if (notification.parentElement) {
+            notification.style.opacity = '0';
+            notification.style.transform = 'translateX(100%)';
+            setTimeout(() => {
+                if (notification.parentElement) {
+                    notification.remove();
+                }
+            }, 300);
+        }
+    }, 8000);
+}
+
 // Initialize page
 document.addEventListener('DOMContentLoaded', function () {
+    // Load new auth integration
+    loadAuthIntegration();
+    
+    // Start with legacy auth check for backward compatibility
     checkAuthStatus();
     startStatusPolling();
     // Initialize role info display
     initializeRoleInfo();
 });
+
+// ============== New Authentication Integration ==============
+
+async function loadAuthIntegration() {
+    try {
+        // Load the new auth integration module
+        const module = await import('./auth/integration.js');
+        console.log('[Auth] New authentication system loaded');
+        
+        // The integration automatically hooks into existing functions
+        // and provides window.AvalonAuth global instance
+    } catch (error) {
+        console.warn('[Auth] Failed to load new auth system, using legacy:', error);
+        // Continue with legacy auth
+    }
+}
 
 // Initialize role info display
 async function initializeRoleInfo() {
@@ -166,8 +236,11 @@ async function handleLogin() {
         if (response.ok) {
             errorEl.classList.add('hidden');
             await checkAuthStatus();
+            
+            // Show success notification
+            showGlobalNotification('✅ Login successful! Welcome back.', 'success');
 
-            // Show success message with session info
+            // Show session info in console
             if (data.remember_me) {
                 console.log('[AUTH] Logged in with 7-day session');
             } else {
@@ -178,12 +251,18 @@ async function handleLogin() {
             openSettingsModal();
             if (data.email_not_confirmed) {
                 errorEl.innerHTML = `
-                    <div>Email not confirmed. Please check your inbox for confirmation email.<br/>
-                    <button onclick="resendConfirmation('${email}')" class="text-indigo-400 hover:underline text-xs mt-1 block">
-                        Resend confirmation email
-                    </button></div>`;
+                    <div class="text-amber-600">
+                        <p class="font-medium">📧 Email confirmation required</p>
+                        <p class="text-sm mt-1">Please check your inbox and confirm your email address before logging in.</p>
+                        <button onclick="resendConfirmation('${email}')" 
+                                class="mt-2 px-3 py-1 bg-amber-100 hover:bg-amber-200 text-amber-800 text-xs font-medium rounded transition-colors">
+                            Resend confirmation email
+                        </button>
+                    </div>`;
             } else {
                 errorEl.textContent = data.error || 'Login failed';
+                errorEl.classList.remove('text-amber-400');
+                errorEl.classList.add('text-red-400');
             }
             errorEl.classList.remove('hidden');
         }
@@ -235,13 +314,14 @@ async function handleRegister() {
 
         if (response.ok) {
             if (data.requires_confirmation) {
-                // 注册成功需要确认，显示成功消息但不重新打开模态框
+                // 注册成功需要确认，显示全局成功消息
+                showGlobalNotification('✅ Registration successful! Please check your email to confirm your account before logging in.', 'success');
                 console.log('[AUTH] Registration successful, email confirmation required');
-                // 可以在这里显示一个全局通知，而不是重新打开模态框
             } else {
                 // 注册成功且不需要确认
                 errorEl.classList.add('hidden');
                 await checkAuthStatus();
+                showGlobalNotification('✅ Registration successful! You are now logged in.', 'success');
             }
         } else {
             // 如果注册失败，重新打开模态框显示错误
@@ -300,21 +380,32 @@ async function resendConfirmation(email) {
     const errorEl = document.getElementById('authError');
 
     try {
-        // In a real implementation, you'd call a dedicated endpoint
-        // For now, we'll simulate it with a delay
         errorEl.innerHTML = '<div class="text-amber-400">Sending confirmation email...</div>';
 
-        // Simulate API call delay
-        await new Promise(resolve => setTimeout(resolve, 1500));
+        // Call the real API endpoint
+        const response = await fetch('/api/auth/resend_confirmation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email })
+        });
 
-        errorEl.innerHTML = `
-            <div class="text-emerald-400">
-                Confirmation email resent to ${email}<br/>
-                <span class="text-xs">Please check your inbox and spam folder.</span>
-            </div>`;
+        const data = await response.json();
+
+        if (response.ok) {
+            errorEl.innerHTML = `
+                <div class="text-emerald-400">
+                    <p class="font-medium">✅ Confirmation email resent</p>
+                    <p class="text-sm mt-1">Please check your inbox and spam folder for the confirmation email.</p>
+                </div>`;
+            
+            // Also show a global notification
+            showGlobalNotification('✅ Confirmation email resent! Please check your inbox.', 'success');
+        } else {
+            errorEl.innerHTML = `<div class="text-red-400">Failed to resend confirmation: ${data.error || 'Unknown error'}</div>`;
+        }
 
     } catch (error) {
-        errorEl.innerHTML = '<div class="text-red-400">Failed to resend confirmation email. Please try again.</div>';
+        errorEl.innerHTML = '<div class="text-red-400">Failed to resend confirmation email. Please check your network and try again.</div>';
     }
 }
 

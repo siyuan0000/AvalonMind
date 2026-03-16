@@ -1,4 +1,5 @@
 import os
+import requests
 from supabase import create_client, Client
 from pathlib import Path
 import json
@@ -103,6 +104,41 @@ class SupabaseClient:
             return res.user, None
         except Exception as e:
             return None, str(e)
+
+    def resend_confirmation(self, email):
+        """Resend email confirmation for a user."""
+        if not self.client:
+            return None, "Supabase client not initialized"
+        try:
+            # Supabase Python client doesn't have a direct resend confirmation method
+            # We need to use the REST API directly
+            import requests
+            
+            # Get the auth endpoint
+            auth_endpoint = f"{self.url}/auth/v1/recover"
+            
+            # Prepare the request
+            headers = {
+                "apikey": self.key,
+                "Content-Type": "application/json"
+            }
+            
+            data = {
+                "email": email,
+                "type": "signup"  # This tells Supabase to resend confirmation
+            }
+            
+            # Make the request
+            response = requests.post(auth_endpoint, json=data, headers=headers)
+            
+            if response.status_code == 200:
+                return True, None
+            else:
+                error_data = response.json()
+                return False, error_data.get("msg", "Failed to resend confirmation")
+                
+        except Exception as e:
+            return False, str(e)
 
     def sign_in(self, email, password):
         """Sign in an existing user."""

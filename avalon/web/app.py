@@ -543,6 +543,34 @@ def update_profile():
     """Update user profile - only is_vip is a valid editable field in current schema."""
     return jsonify({'error': 'Profile updates not supported in current schema'}), 404
 
+@app.route('/api/auth/resend_confirmation', methods=['POST'])
+def auth_resend_confirmation():
+    """Resend email confirmation for a user."""
+    data = request.json
+    email = data.get('email')
+    
+    if not email:
+        return jsonify({'error': 'Email is required'}), 400
+    
+    try:
+        print(f"[AUTH] Resend confirmation requested for: {email}")
+        
+        # Use Supabase's resend confirmation method
+        success, error = supabase.resend_confirmation(email)
+        
+        if success:
+            return jsonify({
+                'message': 'Confirmation email resent successfully',
+                'email': email,
+                'note': 'Please check your inbox and spam folder.'
+            })
+        else:
+            return jsonify({'error': f'Failed to resend confirmation: {error}'}), 500
+        
+    except Exception as e:
+        print(f"[auth_resend_confirmation] Error: {e}")
+        return jsonify({'error': f'Failed to resend confirmation: {str(e)}'}), 500
+
 @app.route('/api/auth/me')
 def auth_me():
     """Get current user info."""
